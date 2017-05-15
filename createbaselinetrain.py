@@ -14,7 +14,7 @@ def buildTrainSet():
 			for i in range(1, len(lines)):
 				line = lines[i]
 				words = line.split(' ')
-				if '<Laughter>' in words:
+				if '<Laughter>' in words: # [Laughter], [laughter], with punctuation
 					# TODO DECIDE: Strip <laughter> from punchlines before train??
 					# punchline = stripLaughter(lines[i-1].split(' '))
 					# punchline = ' '.join(punchline) # prevLine is punchline

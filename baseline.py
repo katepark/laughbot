@@ -13,7 +13,7 @@ def fitModel(examples, vocab=None):
         corpus = []
         for x,y in examples:
             corpus.append(x)
-        vectorizer = CountVectorizer(vocabulary=vocab, ngram_range=(1, 2),token_pattern=r'\b\w+\b', min_df=1)
+        vectorizer = CountVectorizer(vocabulary=vocab, ngram_range=(1, 3),token_pattern=r'\b\w+\b', min_df=1)
         X = vectorizer.fit_transform(corpus)
         # analyze = vectorizer.build_analyzer()
         fullfeature = X.toarray()
@@ -61,13 +61,44 @@ def learnPredictor(trainExamples, valExamples, testExamples):
         testPredict = regr.predict(testX)
 
         precision,recall,fscore,support = precision_recall_fscore_support(trainY, trainPredict, average='binary')
-        print "TRAIN scores:\nPrecision:%f\nRecall:%f\nF1:%f" % (precision, recall, fscore)
+        print "LOGISTIC TRAIN scores:\n\tPrecision:%f\n\tRecall:%f\n\tF1:%f" % (precision, recall, fscore)
         precision,recall,fscore,support = precision_recall_fscore_support(testY, testPredict, average='binary')
-        print "TEST scores:\nPrecision:%f\nRecall:%f\nF1:%f" % (precision, recall, fscore)
+        print "LOGISTIC TEST scores:\n\tPrecision:%f\n\tRecall:%f\n\tF1:%f" % (precision, recall, fscore)
 
+def allPosNegBaseline(trainExamples, valExamples, testExamples):
+    print 'ALL POSITIVE TRAIN scores:'
+    allPos(trainExamples)
+    print 'ALL POSITIVE TEST scores:'
+    allPos(testExamples)
+    print 'ALL NEGATIVE TRAIN scores:'
+    allNeg(trainExamples)
+    print 'ALL NEGATIVE TEST scores:'
+    allNeg(testExamples)
+
+def allPos(examples):
+    num_punchlines = 0
+    for x,y in examples:
+        if y == 1:
+            num_punchlines += 1
+    precision = float(num_punchlines)/len(examples)
+    recall = 1.0
+    fscore = 2.0 * precision * recall / (precision + recall)
+
+    print "\tPrecision:%f\n\tRecall:%f\n\tF1:%f" % (precision, recall, fscore)
+
+def allNeg(examples):
+    num_punchlines = 0
+    for x,y in examples:
+        if y == 1:
+            num_punchlines += 1
+    precision = 1.0 - float(num_punchlines)/len(examples)
+    recall = 0.0
+    fscore = 0.0
+    print "\tPrecision:%f\n\tRecall:%f\n\tF1:%f" % (precision, recall, fscore)
 
 
 trainExamples = util.readExamples('switchboardsample.train')
 valExamples = util.readExamples('switchboardsample.val')
 testExamples = util.readExamples('switchboardsample.test')
 learnPredictor(trainExamples, valExamples, testExamples)
+allPosNegBaseline(trainExamples, valExamples, testExamples)

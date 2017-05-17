@@ -1,9 +1,7 @@
 # laughbot
 Predicting Humor in Spoken NLP
 
-# create train/val/test files from data folder
-# TODO: add all transcripts to data file
-
+# if no .test/val/train files, run
 python createbaselinetrain.py
 
 # run regression model

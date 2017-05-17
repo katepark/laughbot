@@ -1,6 +1,8 @@
 from sklearn.linear_model import LogisticRegression
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.metrics import precision_recall_fscore_support
+from nltk import pos_tag
+from nltk.sentiment.vader import SentimentIntensityAnalyzer
 import util
 import random
 import collections
@@ -17,15 +19,62 @@ def fitModel(examples, vocab=None):
         X = vectorizer.fit_transform(corpus)
         # analyze = vectorizer.build_analyzer()
         fullfeature = X.toarray()
+        
+        #Add features from grammatical context in transcript
+        fullfeature = contextualFeatures(examples, fullfeature)
         print 'SHAPE', len(fullfeature), len(fullfeature[0])
         # return vectorizer
         return fullfeature, vectorizer.vocabulary_
 
-def featureExtractor(punchline, vocab):
+
+#http://www.nltk.org/book/ch06.html
+#Cite SentiWordNet for positivity, negativity, objectivity (http://sentiwordnet.isti.cnr.it/)
+def contextualFeatures(examples, fullfeature):
+    add_features = np.zeros((len(fullfeature), 8)) #4 new features added (pos has 4 elems)
+    sid = SentimentIntensityAnalyzer()
+    for line in xrange(len(examples)): 
+        #fetures added: pos, punchline_len, avg_word_len, sentiment
+        
+        punchline = examples[line][0].split()
+        add_features[line][:5] = extract_pos(punchline) #parts of speech (pos)
+        add_features[line][5] = len(punchline) #punchline_len
+        tot_word_length = 0
+        for word in punchline:
+            tot_word_length += len(punchline)
+        avg_word_len = tot_word_length/len(punchline) if len(punchline) != 0 else 0
+        add_features[line][6] = avg_word_len #avg_word_len
+
+        ss = sid.polarity_scores(examples[line][0])
+        add_features[line][7], ss["compound"] #sentiment
+
+    fullfeature = np.hstack((fullfeature, add_features))
+    return fullfeature
+
+def extract_pos(punchline): #parts of speech
+        tags = pos_tag(punchline)
+        noun = 0
+        verb = 0
+        pron = 0
+        adj = 0
+        adv = 0
+        for tag in tags:
+            if tag[1] == "NN": noun += 1
+            elif tag[1][:2] == "VB": verb += 1
+            elif tag[1] == "JJ": adj += 1
+            elif tag[1] == "RB": adv += 1
+            elif tag[0].lower() == "you" or tag[0].lower() == "me" or tag[0].lower() == "I" or tag[0].lower() == "he" or tag[0].lower() == "she" or tag[0].lower() == "him" or tag[0].lower() == "her" or tag[0].lower() == "they":
+                pron += 1
+        return np.array([noun, verb, pron, adj, adv])
+
+#We never use this
+'''def featureExtractor(punchline, vocab):
         # print vectorizer.transform(punchline).toarray()
         feature = vectorizer.transform(punchline).toarray()
+        # for all new features
+        # feature.append() THE VALUES
         # print 'SHAPE INDIV', len(feature), len(feature[0])
         return vectorizer.transform(punchline).toarray()
+'''
     	
 def learnPredictor(trainExamples, valExamples, testExamples):
     	print 'BEGIN: GENERATE TRAIN'

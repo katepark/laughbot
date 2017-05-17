@@ -13,7 +13,7 @@ def fitModel(examples, vocab=None):
         corpus = []
         for x,y in examples:
             corpus.append(x)
-        vectorizer = CountVectorizer(vocabulary=vocab, ngram_range=(1, 2),token_pattern=r'\b\w+\b', min_df=1)
+        vectorizer = CountVectorizer(vocabulary=vocab, ngram_range=(1, 3),token_pattern=r'\b\w+\b', min_df=1)
         X = vectorizer.fit_transform(corpus)
         # analyze = vectorizer.build_analyzer()
         fullfeature = X.toarray()

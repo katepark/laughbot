@@ -11,9 +11,9 @@ import sys
 import numpy as np
 
 
-ngram_threshold = 10
-# 8 357143
-# 10 0.482759
+ngram_threshold = 7
+# 5 .432
+# 6 .424
 
 def fitModel(examples, vocab=None, frequent_ngram_col_idx=None):
         corpus = []
@@ -85,7 +85,7 @@ def extract_pos(punchline): #parts of speech
         return np.array([noun, verb, pron, adj, adv])
 
     	
-def learnPredictor(trainExamples, valExamples, testExamples):
+def learnPredictor(trainExamples, devExamples, testExamples):
     	print 'BEGIN: GENERATE TRAIN'
         trainFeatures, vocabulary, freq_col_idx = fitModel(trainExamples)
         trainX = []
@@ -97,7 +97,18 @@ def learnPredictor(trainExamples, valExamples, testExamples):
             trainY.append(y)
 
     	print 'END: GENERATE TRAIN'
-    	print 'BEGIN: GENERATE TEST'
+    	
+        print 'BEGIN: GENERATE DEV'
+        devFeatures, _, freq_col_idx_dev = fitModel(devExamples, vocab=vocabulary, frequent_ngram_col_idx=freq_col_idx)
+        devX = []
+        devY = []
+        for x,y in devExamples:
+            phi = devFeatures[len(devX)]
+            devX.append(phi)
+            devY.append(y)
+        print 'END: GENERATE DEV'
+        
+        print 'BEGIN: GENERATE TEST'
         testFeatures, _, freq_col_idx_test = fitModel(testExamples, vocab=vocabulary, frequent_ngram_col_idx=freq_col_idx)
     	testX = []
     	testY = []
@@ -106,30 +117,34 @@ def learnPredictor(trainExamples, valExamples, testExamples):
     		testX.append(phi)
     		testY.append(y)
     	print 'END: GENERATE TEST'
-    	# testX = np.reshape(testX, (len(testX), numFeatures))
-    	# print "Size: ", len(testX), len(testX[0])
-
-    	# # val
         
         print "BEGIN: TRAINING"
         regr = LogisticRegression()
         regr.fit(trainX, trainY)
         print "END: TRAINING"
         trainPredict = regr.predict(trainX)
+        devPredict = regr.predict(devX)
         testPredict = regr.predict(testX)
-
         precision,recall,fscore,support = precision_recall_fscore_support(trainY, trainPredict, average='binary')
         print "LOGISTIC TRAIN scores:\n\tPrecision:%f\n\tRecall:%f\n\tF1:%f" % (precision, recall, fscore)
+        
+        precision,recall,fscore,support = precision_recall_fscore_support(devY, devPredict, average='binary')
+        print "LOGISTIC DEV scores:\n\tPrecision:%f\n\tRecall:%f\n\tF1:%f" % (precision, recall, fscore)
+
         precision,recall,fscore,support = precision_recall_fscore_support(testY, testPredict, average='binary')
         print "LOGISTIC TEST scores:\n\tPrecision:%f\n\tRecall:%f\n\tF1:%f" % (precision, recall, fscore)
 
-def allPosNegBaseline(trainExamples, valExamples, testExamples):
+def allPosNegBaseline(trainExamples, devExamples, testExamples):
     print 'ALL POSITIVE TRAIN scores:'
     allPos(trainExamples)
+    print 'ALL POSITIVE DEV scores:'
+    allPos(devExamples)    
     print 'ALL POSITIVE TEST scores:'
     allPos(testExamples)
     print 'ALL NEGATIVE TRAIN scores:'
     allNeg(trainExamples)
+    print 'ALL NEGATIVE DEV scores:'
+    allNeg(devExamples)
     print 'ALL NEGATIVE TEST scores:'
     allNeg(testExamples)
 

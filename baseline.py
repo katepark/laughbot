@@ -9,7 +9,7 @@ import collections
 import math
 import sys
 import numpy as np
-
+from sklearn.metrics import classification_report
 
 ngram_threshold = 7
 # 5 .432
@@ -19,6 +19,7 @@ def fitModel(examples, vocab=None, frequent_ngram_col_idx=None):
         corpus = []
         for x,y in examples:
             corpus.append(x)
+            print x
         vectorizer = CountVectorizer(vocabulary=vocab, ngram_range=(1, 3),token_pattern=r'\b\w+\b', min_df=1)
         X = vectorizer.fit_transform(corpus)
         
@@ -88,34 +89,21 @@ def extract_pos(punchline): #parts of speech
 def learnPredictor(trainExamples, devExamples, testExamples):
     	print 'BEGIN: GENERATE TRAIN'
         trainFeatures, vocabulary, freq_col_idx = fitModel(trainExamples)
-        trainX = []
-    	trainY = []
-    	for x,y in trainExamples:
-    		# phi = featureExtractor(x, vectorizer)
-            phi = trainFeatures[len(trainX)]
-            trainX.append(phi)
-            trainY.append(y)
+        trainX = trainFeatures
+    	trainY = [y for x,y in trainExamples]
 
     	print 'END: GENERATE TRAIN'
     	
         print 'BEGIN: GENERATE DEV'
         devFeatures, _, freq_col_idx_dev = fitModel(devExamples, vocab=vocabulary, frequent_ngram_col_idx=freq_col_idx)
-        devX = []
-        devY = []
-        for x,y in devExamples:
-            phi = devFeatures[len(devX)]
-            devX.append(phi)
-            devY.append(y)
+        devX = devFeatures
+        devY = [y for x,y in devExamples]
         print 'END: GENERATE DEV'
         
         print 'BEGIN: GENERATE TEST'
         testFeatures, _, freq_col_idx_test = fitModel(testExamples, vocab=vocabulary, frequent_ngram_col_idx=freq_col_idx)
-    	testX = []
-    	testY = []
-    	for x,y in testExamples:
-    		phi = testFeatures[len(testX)]
-    		testX.append(phi)
-    		testY.append(y)
+        testX = testFeatures
+        testY = [y for x,y in testExamples]
     	print 'END: GENERATE TEST'
         
         print "BEGIN: TRAINING"
@@ -133,6 +121,7 @@ def learnPredictor(trainExamples, devExamples, testExamples):
 
         precision,recall,fscore,support = precision_recall_fscore_support(testY, testPredict, average='binary')
         print "LOGISTIC TEST scores:\n\tPrecision:%f\n\tRecall:%f\n\tF1:%f" % (precision, recall, fscore)
+        return vocabulary, freq_col_idx, regr
 
 def allPosNegBaseline(trainExamples, devExamples, testExamples):
     print 'ALL POSITIVE TRAIN scores:'
@@ -169,9 +158,24 @@ def allNeg(examples):
     fscore = 0.0
     print "\tPrecision:%f\n\tRecall:%f\n\tF1:%f" % (precision, recall, fscore)
 
+def realtimePredict(vocabulary, freq_col_idx, regr):
+    '''
+        Predicts based on inputed transcript
+    '''
+    x = raw_input('Give me a punchline: ')
+    print x
+    while (x):
+        examples = []
+        examples.append((x, 0))
+        feature, _, _ = fitModel(examples, vocab=vocabulary, frequent_ngram_col_idx=freq_col_idx)
+        predict = regr.predict(feature)
+        print 'Your punchline was funny: ', predict[0]
+        x = raw_input('Give me a punchline: ')
 
-trainExamples = util.readExamples('switchboardsample.train')
-valExamples = util.readExamples('switchboardsample.val')
-testExamples = util.readExamples('switchboardsample.test')
-learnPredictor(trainExamples, valExamples, testExamples)
+
+trainExamples = util.readExamples('switchboardsampleL.train')
+valExamples = util.readExamples('switchboardsampleL.val')
+testExamples = util.readExamples('switchboardsampleL.test')
+vocabulary, freq_col_idx, regr = learnPredictor(trainExamples, valExamples, testExamples)
 allPosNegBaseline(trainExamples, valExamples, testExamples)
+realtimePredict(vocabulary, freq_col_idx, regr)

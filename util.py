@@ -50,10 +50,11 @@ def readExamples(path):
     Reads a set of training examples.
     '''
     examples = []
-    for line in open(path):
+    for line in open(path, 'rb'):
         # Format of each line: <output label (+1 or -1)> <input sentence>
         y, x = line.split(' ', 1)
-        examples.append((x.strip(), int(float(y))))
+        x = unicode(x.strip(), errors='ignore')
+        examples.append((x, int(float(y))))
     print 'Read %d examples from %s' % (len(examples), path)
     return examples
 

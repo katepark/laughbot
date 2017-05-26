@@ -4,7 +4,7 @@ import glob
 import re
 
 laughterregex = '[\[<][Ll]aughter[\]>].?'
-data_portion = 1
+data_portion = 0.5
 
 def buildTrainSet():
 	trainFile = open('switchboardsampleL.train', 'w')

@@ -26,14 +26,14 @@ class Config:
     instantiation.
     """
     context_size = 0
-    num_mfcc_features = 13 #standard amount
+    num_mfcc_features = 13 #12 mfcc and 1 energy
     num_final_features = num_mfcc_features * (2 * context_size + 1)
 
     batch_size = 16	
     num_classes = 2 #laugh or no laugh
     num_hidden = 1 #was 128, we only need the "last one", so try with just 1
 
-    num_epochs = 10 #was 50, shorten time needed
+    num_epochs = 10 #was 50, tune later, look at graph to see if it's enough
     l2_lambda = 0.0000001
     lr = 1e-3
 
@@ -127,7 +127,7 @@ class CTCModel():
         logits = tf.reshape(logits, shape=[outputsShape[0], outputsShape[1], Config.num_classes])
 
         ### END YOUR CODE
-        self.last_hidden_state = state[-1] #i added this!!!- -> this is exactly what we need for determining funniness
+        self.last_hidden_state = state #i added this!!!- -> this is exactly what we need for determining funniness -- the last hidden state
         self.logits = logits
 
     def add_training_op(self):
@@ -142,12 +142,15 @@ class CTCModel():
         optimizer = None 
 
         ### YOUR CODE HERE (~1-2 lines)
-        optimizer = tf.train.AdamOptimizer(Config.lr) #.minimize(self.loss)
+        self.cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=self.logits, labels=targets_placeholder))
+        optimizer = tf.train.AdamOptimizer(Config.lr).minimize(self.cost) 
+        correct_pred = tf.equal(tf.argmax(self.logits,1), tf.argmax(self.targets_placeholder,1))
+        self.accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
         ### END YOUR CODE
         
         self.optimizer = optimizer
 
-    def add_decoder_and_wer_op(self):
+    '''def add_decoder_and_wer_op(self):
         """Setup the decoder and add the word error rate calculations here. 
 
         Tip: You will find tf.nn.ctc_beam_search_decoder and tf.edit_distance methods useful here. 
@@ -168,6 +171,7 @@ class CTCModel():
 
         self.decoded_sequence = decoded_sequence
         #self.wer = wer
+    '''
 
     def add_summary_op(self):
         self.merged_summary_op = tf.summary.merge_all()
@@ -178,13 +182,14 @@ class CTCModel():
         self.add_placeholders()
         self.add_prediction_op()
         self.add_training_op()       
-        self.add_decoder_and_wer_op()
+        #self.add_decoder_and_wer_op()
         self.add_summary_op()
+
         
 
     def train_on_batch(self, session, train_inputs_batch, train_targets_batch, train_seq_len_batch, train=True):
         feed = self.create_feed_dict(train_inputs_batch, train_targets_batch, train_seq_len_batch)
-        batch_cost, batch_num_valid_ex, summary = session.run([self.loss, self.num_valid_examples, self.merged_summary_op], feed)
+        batch_cost, batch_num_valid_ex, summary = session.run([self.cost, self.num_valid_examples, self.merged_summary_op], feed)
         #took out wer and self.wer
 
         if math.isnan(batch_cost): # basically all examples in this batch have been skipped 
@@ -192,12 +197,17 @@ class CTCModel():
         if train:
             _ = session.run([self.optimizer], feed)
 
-        return batch_cost, summary
+        return batch_cost, 
+
 
     def print_results(self, train_inputs_batch, train_targets_batch, train_seq_len_batch):
         train_feed = self.create_feed_dict(train_inputs_batch, train_targets_batch, train_seq_len_batch)
         train_first_batch_preds = session.run(self.decoded_sequence, feed_dict=train_feed)
-        compare_predicted_to_true(train_first_batch_preds, train_targets_batch)        
+        compare_predicted_to_true(train_first_batch_preds, train_targets_batch)
+        #acc = session.run(self.accuracy, feed_dict=train_feed) #TODO: uncomment
+        #loss = session.run(self.cost, feed_dict=train_feed)
+        #print ("Minibatch Loss= " + "{:,6f}".format(loss) + ", Training Accuracy= " + "{:.5f}".format(acc))
+
 
     def __init__(self):
         self.build()
@@ -262,7 +272,7 @@ if __name__ == "__main__":
                     batch_cost, summary = model.train_on_batch(session, train_feature_minibatches[batch], train_labels_minibatches[batch], train_seqlens_minibatches[batch], train=True)
                     total_train_cost += batch_cost * cur_batch_size
                     #total_train_wer += batch_ler * cur_batch_size
-                    
+                    # TODO: print batch accuracy and loss
                     train_writer.add_summary(summary, step_ii)
                     step_ii += 1 
 

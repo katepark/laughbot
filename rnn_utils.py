@@ -12,6 +12,7 @@ import numpy as np
 import os.path
 import tensorflow as tf
 import cPickle as pickle
+#import pickle
 
 
 def sparse_tuple_from(sequences, dtype=np.int32):
@@ -111,12 +112,30 @@ def compare_predicted_to_true(preds, trues_tup):
         print("Predicted: {}\n   Actual: {}\n".format(predicted_label, true_label))
         
 def load_dataset(dataset_path):
-	with open(dataset_path, 'rb') as f:
-		dataset = pickle.load(f)
-	return dataset
+    examples = []
+    targets = []
+    length = []
+    with open(dataset_path, 'rb') as f:
+        while True:
+            try:
+                dict_elm = pickle.load(f)
+                for key, value in dict_elm.iteritems():
+                    examples.append(value)
+                    class_label = key.split('_')[1]
+                    targets.append(class_label)
+                    length.append(len(value))  # number of row = # of timesteps
+                # filling in ex, targets, length
+            except (EOFError, pickle.UnpicklingError):
+                break            
+
+
+	return (examples, targets, length)
 
 def make_batches(dataset, batch_size=16):
-    print("dataset", type(dataset["sw2001_0_34"]), len(dataset["sw2001_0_34"]))
+    print("dataset", dataset[0][:10])
+    print (dataset[1][:10])
+    print (dataset[2][:10])
+    # dataset - list of {:}
     examples = []
     sequences = []
     seqlens = []

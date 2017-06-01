@@ -142,7 +142,7 @@ class CTCModel():
         optimizer = None 
 
         ### YOUR CODE HERE (~1-2 lines)
-        self.cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=self.logits, labels=targets_placeholder))
+        self.cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=self.logits, labels=self.targets_placeholder))
         optimizer = tf.train.AdamOptimizer(Config.lr).minimize(self.cost) 
         correct_pred = tf.equal(tf.argmax(self.logits,1), tf.argmax(self.targets_placeholder,1))
         self.accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))

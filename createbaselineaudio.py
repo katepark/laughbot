@@ -16,33 +16,35 @@ HEADER_SKIP = 15 # skip over header, start at line 16
 DATA_PORTION = 1.0
 MAX_AUDIO_VECTOR = 50 # max # of timesteps (10ms each) of audio features to store for each line
 
-def writeAudio(f, matrix, label, i, base):
-	'''
-	saves an audio features matrix to pickle file
-
-	format of output file:
-	each entry is a {key: matrix} dict, where key is file # + class label + line #
-	to read back:
-	call pickle.load(file) to get one dict entry at a time
-	'''
-	key = base + '_' + label + '_' + str(i)
-	obj = {key: matrix}
-	pickle.dump(obj, f)
+def writeAudio(allAudio, matrix, allLabels, label, allLens):
+	allAudio.append(matrix)
+	allLabels.append(label)
+	allLens.append(len(matrix))
 
 
 def buildTrainSet():
 	# raw sentences
 	trainFile = open('switchboardsamplesmall.train', 'w')
-	validationFile = open('switchboardsamplesmall.val', 'w')
+	valFile = open('switchboardsamplesmall.val', 'w')
 	testFile = open('switchboardsamplesmall.test', 'w')
 	# audio features
 	trainAudio = open('switchboardaudiosmall.train.pkl', 'wb')
-	validationAudio = open('switchboardaudiosmall.val.pkl', 'wb')
+	valAudio = open('switchboardaudiosmall.val.pkl', 'wb')
 	testAudio = open('switchboardaudiosmall.test.pkl', 'wb')
 
 	num_punchlines = [0]*3
 	num_unpunchlines = [0]*3
 	# iterate through all files in data
+	trainAudioVectors = []
+	trainLabels = []
+	trainLens = []
+	valAudioVectors = []
+	valLabels = []
+	valLens = []
+	testAudioVectors = []
+	testLabels = []
+	testLens = []
+
 
 	for subdir, dirs, files in os.walk(os.getcwd() + TRANS_PATH): # walks through all disc files
 		for filename in files:
@@ -104,15 +106,15 @@ def buildTrainSet():
 								rando = random.random()
 								if rando < 0.8:
 									trainFile.write(classifiedLine)
-									writeAudio(trainAudio, prevAudio, '1', i, base)
+									writeAudio(trainAudioVectors, prevAudio, trainLabels, 1, trainLens)
 									num_punchlines[0] += 1
 								elif rando < 0.9:
-									validationFile.write(classifiedLine)
-									writeAudio(validationAudio, prevAudio, '1', i, base)
+									valFile.write(classifiedLine)
+									writeAudio(valAudioVectors, prevAudio, valLabels, 1, valLens)
 									num_punchlines[1] += 1
 								else:
 									testFile.write(classifiedLine)
-									writeAudio(testAudio, prevAudio, '1', i, base)
+									writeAudio(testAudioVectors, prevAudio, testLabels, 1, testLens)
 									num_punchlines[2] += 1
 
 								punchLineFound = True
@@ -128,19 +130,27 @@ def buildTrainSet():
 							if random.random() < 0.05:  # sample because too many unfunny lines
 								num_unpunchlines[0] += 1
 								trainFile.write(classifiedLine)
-								writeAudio(trainAudio, prevAudio, '0', i, base)
+								writeAudio(trainAudioVectors, prevAudio, trainLabels, 0, trainLens)
 						elif rando < 0.9:
 							if random.random() < 0.05:  # sample because too many unfunny lines
 								num_unpunchlines[1] += 1
-								validationFile.write(classifiedLine)
-								writeAudio(validationAudio, prevAudio, '0', i, base)
+								valFile.write(classifiedLine)
+								writeAudio(valAudioVectors, prevAudio, valLabels, 0, valLens)
 						else:
 							num_unpunchlines[2] += 1
 							testFile.write(classifiedLine)
-							writeAudio(testAudio, prevAudio, '0', i, base)
+							writeAudio(testAudioVectors, prevAudio, testLabels, 0, testLens)
 						audioVectors.append(audio)
 						# print 'UNFUNNY', classifiedLine
 	
+	# saves an audio features matrix to pickle file
+	# format of output file:
+	# (examples, targets, lengths) tuple
+	# call pickle.load(f) to get tuple
+	pickle.dump((trainAudioVectors, trainLabels, trainLens), trainAudio)
+	pickle.dump((valAudioVectors, valLabels, valLens), valAudio)
+	pickle.dump((testAudioVectors, testLabels, testLens), testAudio)
+
 	for i in range(len(num_punchlines)):
 		print 'STATS', 'NUM PUNCHLINES', num_punchlines[i], 'NUM UNFUNNY LINES', num_unpunchlines[i], 'Fraction of Punchlines', float(num_punchlines[i]) / (num_punchlines[i] + num_unpunchlines[i])
 

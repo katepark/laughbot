@@ -158,7 +158,7 @@ class CTCModel():
         
         self.optimizer = optimizer
 
-    '''def add_decoder_and_wer_op(self):
+    def add_decoder_and_wer_op(self):
         """Setup the decoder and add the word error rate calculations here. 
 
         Tip: You will find tf.nn.ctc_beam_search_decoder and tf.edit_distance methods useful here. 
@@ -169,17 +169,19 @@ class CTCModel():
         wer = None 
 
         ### YOUR CODE HERE (~2-3 lines)
+        # TODO: change decoder?
         decoded_sequence = tf.nn.ctc_beam_search_decoder(self.logits, self.seq_lens_placeholder, merge_repeated=False)[0][0]
+        
         #wer = tf.edit_distance(tf.cast(decoded_sequence, tf.int32), self.targets_placeholder, normalize=True)
         #wer = tf.reduce_mean(wer)
         ### END YOUR CODE
 
-        tf.summary.scalar("loss", self.loss)
+        # tf.summary.scalar("loss", self.loss)
         #tf.summary.scalar("wer", wer)
 
         self.decoded_sequence = decoded_sequence
         #self.wer = wer
-    '''
+    
 
     def add_summary_op(self):
         self.merged_summary_op = tf.summary.merge_all()
@@ -190,22 +192,25 @@ class CTCModel():
         self.add_placeholders()
         self.add_prediction_op()
         self.add_training_op()       
-        #self.add_decoder_and_wer_op()
+        self.add_decoder_and_wer_op()
         self.add_summary_op()
 
         
 
     def train_on_batch(self, session, train_inputs_batch, train_targets_batch, train_seq_len_batch, train=True):
-        print(train_targets_batch)
-        np.reshape(train_targets_batch, (Config.batch_size, 1))
+        # print(train_targets_batch)
+        np.reshape(train_targets_batch, (np.shape(train_targets_batch)[0], 1))
 
         feed = self.create_feed_dict(train_inputs_batch, train_targets_batch, train_seq_len_batch)
 
         # batch_cost, summary = session.run([self.cost, self.merged_summary_op], feed)
         #took out self, wer, batch_valid_examples
         batch_cost = session.run(self.cost, feed)
-        summary = session.run(self.merged_summary_op, feed)
-
+        #print('batch cost', batch_cost)
+        # TODO: make this line work!
+        # summary = session.run(self.merged_summary_op, feed)
+        summary = None
+        #print('summary', summary)
         if math.isnan(batch_cost): # basically all examples in this batch have been skipped 
             return 0
         if train:
@@ -287,7 +292,6 @@ if __name__ == "__main__":
                     batch_cost, summary = model.train_on_batch(session, train_feature_minibatches[batch], train_labels_minibatches[batch], train_seqlens_minibatches[batch], train=True)
                     total_train_cost += batch_cost * cur_batch_size
                     #total_train_wer += batch_ler * cur_batch_size
-                    # TODO: print batch accuracy and loss
                     train_writer.add_summary(summary, step_ii)
                     step_ii += 1 
 
@@ -296,10 +300,11 @@ if __name__ == "__main__":
                 #train_wer = total_train_wer / num_examples
 
                 val_batch_cost, _ = model.train_on_batch(session, val_feature_minibatches[0], val_labels_minibatches[0], val_seqlens_minibatches[0], train=False)
-                
-                log = "Epoch {}/{}, train_cost = {:.3f}, train_ed = {:.3f}, val_cost = {:.3f}, val_ed = {:.3f}, time = {:.3f}"
-                print(log.format(curr_epoch+1, Config.num_epochs, train_cost, val_batch_cost, val_batch_ler, time.time() - start))
-            
+
+                # TODO add accuracy, loss                
+                log = "Epoch {}/{}, train_cost = {:.3f}, val_cost = {:.3f}, time = {:.3f}"
+                print(log.format(curr_epoch+1, Config.num_epochs, train_cost, val_batch_cost, time.time() - start))
+
                 if args.print_every is not None and (curr_epoch + 1) % args.print_every == 0: 
                     batch_ii = 0
                     model.print_results(train_feature_minibatches[batch_ii], train_labels_minibatches[batch_ii], train_seqlens_minibatches[batch_ii])

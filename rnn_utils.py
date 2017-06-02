@@ -118,6 +118,7 @@ def load_dataset(dataset_path):
     with open(dataset_path, 'rb') as f:
         while True:
             try:
+                #each pickle_load loads one example as a dict {:}
                 dict_elm = pickle.load(f)
                 for key, value in dict_elm.iteritems():
                     examples.append(value)
@@ -132,10 +133,9 @@ def load_dataset(dataset_path):
 	return (examples, targets, length)
 
 def make_batches(dataset, batch_size=16):
-    print("dataset", dataset[0][:10])
-    print (dataset[1][:10])
-    print (dataset[2][:10])
-    # dataset - list of {:}
+    #print("dataset", dataset[0][:10])
+    #print (dataset[1][:10])
+    #print (dataset[2][:10])
     examples = []
     sequences = []
     seqlens = []

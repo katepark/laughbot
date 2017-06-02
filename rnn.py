@@ -62,7 +62,7 @@ class CTCModel():
 
         ### YOUR CODE HERE (~3 lines)
         inputs_placeholder = tf.placeholder(tf.float32, shape=(None, None, Config.num_final_features))
-        targets_placeholder = tf.sparse_placeholder(tf.int32)
+        targets_placeholder = tf.placeholder(tf.int32, shape=(None))
         seq_lens_placeholder = tf.placeholder(tf.int32, shape=(None))
         ### END YOUR CODE
 
@@ -130,6 +130,7 @@ class CTCModel():
         self.last_hidden_state = state #i added this!!!- -> this is exactly what we need for determining funniness -- the last hidden state
         self.logits = logits
 
+
     def add_training_op(self):
         """Sets up the training Ops.
 
@@ -141,8 +142,8 @@ class CTCModel():
         """
         optimizer = None 
 
-        # test_targets = tf.zeros([16],tf.int32)
-        self.cost = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(logits=self.logits, labels=test_targets))
+        self.cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=self.logits, labels=self.targets_placeholder))
+        
         optimizer = tf.train.AdamOptimizer(Config.lr).minimize(self.cost) 
         correct_pred = tf.equal(tf.argmax(self.logits,1), tf.argmax(self.targets_placeholder,1))
         self.accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))

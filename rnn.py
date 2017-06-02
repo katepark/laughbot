@@ -146,7 +146,10 @@ class CTCModel():
         """
         optimizer = None 
 
-        self.cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=self.logits, labels=self.targets_placeholder))
+        logits_shape = tf.shape(self.logits)
+        reshaped_logits = tf.reshape(self.logits, shape=[logits_shape[0], logits_shape[1]*logits_shape[2]])
+        print('COST logits shape', tf.shape(self.logits)[0], tf.shape(self.logits)[1], 'targets shape', tf.shape(self.targets_placeholder))
+        self.cost = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(logits=reshaped_logits, labels=self.targets_placeholder))
         
         optimizer = tf.train.AdamOptimizer(Config.lr).minimize(self.cost) 
         correct_pred = tf.equal(tf.argmax(self.logits,1), tf.argmax(self.targets_placeholder,1))
@@ -208,7 +211,7 @@ class CTCModel():
         if train:
             _ = session.run([self.optimizer], feed)
 
-        return batch_cost, 
+        return batch_cost, summary
 
 
     def print_results(self, train_inputs_batch, train_targets_batch, train_seq_len_batch):

@@ -44,7 +44,8 @@ class CTCModel():
     """
 
     def set_num_examples(self, num_examples):
-        self.num_valid_examples = num_examples
+        self.num_valid_examples = tf.cast(num_examples, tf.int32)
+
 
     def add_placeholders(self):
         """Generates placeholder variables to represent the input tensors
@@ -192,9 +193,15 @@ class CTCModel():
         
 
     def train_on_batch(self, session, train_inputs_batch, train_targets_batch, train_seq_len_batch, train=True):
+        print(train_targets_batch)
+        np.reshape(train_targets_batch, (Config.batch_size, 1))
+
         feed = self.create_feed_dict(train_inputs_batch, train_targets_batch, train_seq_len_batch)
-        batch_cost, batch_num_valid_ex, summary = session.run([self.cost, self.num_valid_examples, self.merged_summary_op], feed)
-        #took out wer and self.wer
+
+        # batch_cost, summary = session.run([self.cost, self.merged_summary_op], feed)
+        #took out self, wer, batch_valid_examples
+        batch_cost = session.run(self.cost, feed)
+        summary = session.run(self.merged_summary_op, feed)
 
         if math.isnan(batch_cost): # basically all examples in this batch have been skipped 
             return 0
@@ -208,9 +215,9 @@ class CTCModel():
         train_feed = self.create_feed_dict(train_inputs_batch, train_targets_batch, train_seq_len_batch)
         train_first_batch_preds = session.run(self.decoded_sequence, feed_dict=train_feed)
         compare_predicted_to_true(train_first_batch_preds, train_targets_batch)
-        #acc = session.run(self.accuracy, feed_dict=train_feed) #TODO: uncomment
-        #loss = session.run(self.cost, feed_dict=train_feed)
-        #print ("Minibatch Loss= " + "{:,6f}".format(loss) + ", Training Accuracy= " + "{:.5f}".format(acc))
+        acc = session.run(self.accuracy, feed_dict=train_feed) #TODO: uncomment
+        loss = session.run(self.cost, feed_dict=train_feed)
+        print ("Minibatch Loss= " + "{:,6f}".format(loss) + ", Training Accuracy= " + "{:.5f}".format(acc))
 
 
     def __init__(self):

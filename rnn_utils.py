@@ -111,26 +111,11 @@ def compare_predicted_to_true(preds, trues_tup):
 
         print("Predicted: {}\n   Actual: {}\n".format(predicted_label, true_label))
         
-def load_dataset(dataset_path):
-    examples = []
-    targets = []
-    length = []
+def load_dataset(dataset_path):       
     with open(dataset_path, 'rb') as f:
-        while True:
-            try:
-                #each pickle_load loads one example as a dict {:}
-                dict_elm = pickle.load(f)
-                for key, value in dict_elm.iteritems():
-                    examples.append(value)
-                    class_label = key.split('_')[1]
-                    targets.append(class_label)
-                    length.append(len(value))  # number of row = # of timesteps
-                # filling in ex, targets, length
-            except (EOFError, pickle.UnpicklingError):
-                break            
+        dataset = pickle.load(f)
 
-
-	return (examples, targets, length)
+	return dataset
 
 def make_batches(dataset, batch_size=16):
     #print("dataset", dataset[0][:10])
@@ -144,7 +129,7 @@ def make_batches(dataset, batch_size=16):
 
     for i in range(0, len(l1), batch_size):
         examples.append(l1[i:i + batch_size])
-        sequences.append(sparse_tuple_from(l2[i:i + batch_size]))
+        sequences.append(l2[i:i + batch_size])
         seqlens.append(l3[i:i + batch_size])
 
     return examples, sequences, seqlens

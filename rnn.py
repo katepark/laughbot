@@ -43,6 +43,9 @@ class CTCModel():
     This network will predict whether a given line of audio isfunny or not.
     """
 
+    def set_num_examples(self, num_examples):
+        self.num_valid_examples = num_examples
+
     def add_placeholders(self):
         """Generates placeholder variables to represent the input tensors
 
@@ -246,6 +249,7 @@ if __name__ == "__main__":
     
     with tf.Graph().as_default():
         model = CTCModel() 
+        model.set_num_examples(num_examples)
         init = tf.global_variables_initializer()
 
         saver = tf.train.Saver(tf.trainable_variables())

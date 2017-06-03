@@ -206,6 +206,10 @@ class CTCModel():
         # batch_cost, summary = session.run([self.cost, self.merged_summary_op], feed)
         #took out self, wer, batch_valid_examples
         batch_cost = session.run(self.cost, feed)
+
+        acc = session.run(self.accuracy, feed_dict=train_feed) #TODO: uncomment
+        loss = session.run(self.cost, feed_dict=train_feed)
+
         #print('batch cost', batch_cost)
         # TODO: make this line work!
         # summary = session.run(self.merged_summary_op, feed)
@@ -216,15 +220,15 @@ class CTCModel():
         if train:
             _ = session.run([self.optimizer], feed)
 
-        return batch_cost, summary
+        return batch_cost, summary, acc, loss
 
 
     def print_results(self, train_inputs_batch, train_targets_batch, train_seq_len_batch):
         train_feed = self.create_feed_dict(train_inputs_batch, train_targets_batch, train_seq_len_batch)
         train_first_batch_preds = session.run(self.decoded_sequence, feed_dict=train_feed)
         compare_predicted_to_true(train_first_batch_preds, train_targets_batch)
-        acc = session.run(self.accuracy, feed_dict=train_feed) #TODO: uncomment
-        loss = session.run(self.cost, feed_dict=train_feed)
+        # acc = session.run(self.accuracy, feed_dict=train_feed) #TODO: uncomment
+        # loss = session.run(self.cost, feed_dict=train_feed)
         print ("Minibatch Loss= " + "{:,6f}".format(loss) + ", Training Accuracy= " + "{:.5f}".format(acc))
 
 
@@ -289,7 +293,7 @@ if __name__ == "__main__":
                 for batch in random.sample(range(num_batches_per_epoch),num_batches_per_epoch):
                     cur_batch_size = len(train_seqlens_minibatches[batch])
 
-                    batch_cost, summary = model.train_on_batch(session, train_feature_minibatches[batch], train_labels_minibatches[batch], train_seqlens_minibatches[batch], train=True)
+                    batch_cost, summary, acc, loss = model.train_on_batch(session, train_feature_minibatches[batch], train_labels_minibatches[batch], train_seqlens_minibatches[batch], train=True)
                     total_train_cost += batch_cost * cur_batch_size
                     #total_train_wer += batch_ler * cur_batch_size
                     train_writer.add_summary(summary, step_ii)
@@ -302,8 +306,8 @@ if __name__ == "__main__":
                 val_batch_cost, _ = model.train_on_batch(session, val_feature_minibatches[0], val_labels_minibatches[0], val_seqlens_minibatches[0], train=False)
 
                 # TODO add accuracy, loss                
-                log = "Epoch {}/{}, train_cost = {:.3f}, val_cost = {:.3f}, time = {:.3f}"
-                print(log.format(curr_epoch+1, Config.num_epochs, train_cost, val_batch_cost, time.time() - start))
+                log = "Epoch {}/{}, train_cost = {:.3f}, val_cost = {:.3f}, accuracy = {:.3f}, loss = {:.3f}, time = {:.3f}"
+                print(log.format(curr_epoch+1, Config.num_epochs, train_cost, val_batch_cost, acc, loss, time.time() - start))
 
                 if args.print_every is not None and (curr_epoch + 1) % args.print_every == 0: 
                     batch_ii = 0

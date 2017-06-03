@@ -33,11 +33,11 @@ class Config:
     num_classes = 2 #laugh or no laugh
     num_hidden = 1 #was 128, we only need the "last one", so try with just 1
 
-    num_epochs = 10 #was 50, tune later, look at graph to see if it's enough
-    l2_lambda = 0.0000001
-    lr = 1e-3
+    num_epochs = 50 #was 50, tune later, look at graph to see if it's enough
+    # l2_lambda = 0.0000001
+    lr = 1e-2
 
-class CTCModel():
+class RNNModel():
     """
     Implements a recursive neural network with a single hidden layer.
     This network will predict whether a given line of audio isfunny or not.
@@ -57,7 +57,7 @@ class CTCModel():
         Adds following nodes to the computational graph:
 
         inputs_placeholder: Input placeholder tensor of shape (None, None, num_final_features), type tf.float32
-        targets_placeholder: Sparse placeholder, type tf.int32. You don't need to specify shape dimension.
+        targets_placeholder: Sparse(?) placeholder, type tf.int32. You don't need to specify shape dimension.
         seq_lens_placeholder: Sequence length placeholder tensor of shape (None), type tf.int32
         """
         inputs_placeholder = None
@@ -127,11 +127,13 @@ class CTCModel():
         outputs2D = tf.reshape(outputs, [-1,Config.num_hidden])
         logits = tf.matmul(outputs2D, W) + b
 
+        self.logits2D = logits
         #reshape to output shape
         logits = tf.reshape(logits, shape=[outputsShape[0], outputsShape[1], Config.num_classes])
 
         ### END YOUR CODE
-        self.last_hidden_state = state #i added this!!!- -> this is exactly what we need for determining funniness -- the last hidden state
+        self.last_hidden_state = state # TOO: pass these last hidden states as a feature for determining humor
+        print('last hidden state', state)
         self.logits = logits
 
 
@@ -146,18 +148,22 @@ class CTCModel():
         """
         optimizer = None 
 
+        # logits [800, 2] -> reshaped logits [16, 50*2] to compare against targets [16]
         logits_shape = tf.shape(self.logits)
         reshaped_logits = tf.reshape(self.logits, shape=[logits_shape[0], logits_shape[1]*logits_shape[2]])
-        print('COST logits shape', tf.shape(self.logits)[0], tf.shape(self.logits)[1], 'targets shape', tf.shape(self.targets_placeholder))
+        
         self.cost = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(logits=reshaped_logits, labels=self.targets_placeholder))
-        
         optimizer = tf.train.AdamOptimizer(Config.lr).minimize(self.cost) 
-        correct_pred = tf.equal(tf.argmax(self.logits,1), tf.argmax(self.targets_placeholder,1))
-        self.accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
-        ### END YOUR CODE
         
+        # HELP: second argument of argmax is 1 in example github, but error out of range so reshaped targets
+        targets2d = tf.reshape(self.targets_placeholder, [tf.shape(self.targets_placeholder)[0],1])
+
+        correct_pred = tf.equal(tf.argmax(reshaped_logits, 1), tf.argmax(targets2d, 1))
+        self.accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
+
         self.optimizer = optimizer
 
+    
     def add_decoder_and_wer_op(self):
         """Setup the decoder and add the word error rate calculations here. 
 
@@ -165,71 +171,57 @@ class CTCModel():
         Also, report the mean WER over the batch in variable wer
 
         """        
-        decoded_sequence = None 
-        wer = None 
+        # decoded_sequence = None 
+        # wer = None 
 
-        ### YOUR CODE HERE (~2-3 lines)
-        # TODO: change decoder?
-        decoded_sequence = tf.nn.ctc_beam_search_decoder(self.logits, self.seq_lens_placeholder, merge_repeated=False)[0][0]
-        
+        # decoded_sequence = tf.nn.ctc_beam_search_decoder(self.logits, self.seq_lens_placeholder, merge_repeated=False)[0][0]
         #wer = tf.edit_distance(tf.cast(decoded_sequence, tf.int32), self.targets_placeholder, normalize=True)
         #wer = tf.reduce_mean(wer)
-        ### END YOUR CODE
-
         # tf.summary.scalar("loss", self.loss)
         #tf.summary.scalar("wer", wer)
 
-        self.decoded_sequence = decoded_sequence
+        # self.decoded_sequence = decoded_sequence
         #self.wer = wer
     
 
     def add_summary_op(self):
+        tf.summary.scalar("cost", self.cost)
+        tf.summary.scalar("accuracy", self.accuracy)
         self.merged_summary_op = tf.summary.merge_all()
-
 
     # This actually builds the computational graph 
     def build(self):
         self.add_placeholders()
         self.add_prediction_op()
         self.add_training_op()       
-        self.add_decoder_and_wer_op()
+        # self.add_decoder_and_wer_op()
         self.add_summary_op()
-
         
 
     def train_on_batch(self, session, train_inputs_batch, train_targets_batch, train_seq_len_batch, train=True):
-        # print(train_targets_batch)
+        
+        # reshape to 2D
         np.reshape(train_targets_batch, (np.shape(train_targets_batch)[0], 1))
 
         feed = self.create_feed_dict(train_inputs_batch, train_targets_batch, train_seq_len_batch)
 
-        # batch_cost, summary = session.run([self.cost, self.merged_summary_op], feed)
-        #took out self, wer, batch_valid_examples
-        batch_cost = session.run(self.cost, feed)
-
-        acc = session.run(self.accuracy, feed_dict=train_feed) #TODO: uncomment
-        loss = session.run(self.cost, feed_dict=train_feed)
-
-        #print('batch cost', batch_cost)
-        # TODO: make this line work!
-        # summary = session.run(self.merged_summary_op, feed)
-        summary = None
-        #print('summary', summary)
+        batch_cost, summary, acc = session.run([self.cost,self.merged_summary_op, self.accuracy], feed)
+        
         if math.isnan(batch_cost): # basically all examples in this batch have been skipped 
             return 0
         if train:
             _ = session.run([self.optimizer], feed)
 
-        return batch_cost, summary, acc, loss
+        return batch_cost, summary, acc
 
 
     def print_results(self, train_inputs_batch, train_targets_batch, train_seq_len_batch):
         train_feed = self.create_feed_dict(train_inputs_batch, train_targets_batch, train_seq_len_batch)
-        train_first_batch_preds = session.run(self.decoded_sequence, feed_dict=train_feed)
-        compare_predicted_to_true(train_first_batch_preds, train_targets_batch)
-        # acc = session.run(self.accuracy, feed_dict=train_feed) #TODO: uncomment
-        # loss = session.run(self.cost, feed_dict=train_feed)
-        print ("Minibatch Loss= " + "{:,6f}".format(loss) + ", Training Accuracy= " + "{:.5f}".format(acc))
+        print("Testing Accuracy:", session.run(self.accuracy, feed_dict=train_feed))
+
+        # we have no decoded sequence
+        # train_first_batch_preds = session.run(self.decoded_sequence, feed_dict=train_feed)        
+        # compare_predicted_to_true(train_first_batch_preds, train_targets_batch)
 
 
     def __init__(self):
@@ -267,7 +259,7 @@ if __name__ == "__main__":
     num_batches_per_epoch = int(math.ceil(num_examples / Config.batch_size))
     
     with tf.Graph().as_default():
-        model = CTCModel() 
+        model = RNNModel() 
         model.set_num_examples(num_examples)
         init = tf.global_variables_initializer()
 
@@ -287,27 +279,30 @@ if __name__ == "__main__":
             step_ii = 0
 
             for curr_epoch in range(Config.num_epochs):
-                total_train_cost = 0#total_train_wer = 0
+                total_train_cost = 0
+                total_train_acc = 0
+                total_train_los = 0
                 start = time.time()
 
                 for batch in random.sample(range(num_batches_per_epoch),num_batches_per_epoch):
                     cur_batch_size = len(train_seqlens_minibatches[batch])
 
-                    batch_cost, summary, acc, loss = model.train_on_batch(session, train_feature_minibatches[batch], train_labels_minibatches[batch], train_seqlens_minibatches[batch], train=True)
+                    batch_cost, summary, acc = model.train_on_batch(session, train_feature_minibatches[batch], train_labels_minibatches[batch], train_seqlens_minibatches[batch], train=True)
                     total_train_cost += batch_cost * cur_batch_size
-                    #total_train_wer += batch_ler * cur_batch_size
+                    total_train_acc += acc * cur_batch_size
+
                     train_writer.add_summary(summary, step_ii)
                     step_ii += 1 
 
                     
                 train_cost = total_train_cost / num_examples
-                #train_wer = total_train_wer / num_examples
+                train_acc = total_train_acc / num_examples
 
-                val_batch_cost, _ = model.train_on_batch(session, val_feature_minibatches[0], val_labels_minibatches[0], val_seqlens_minibatches[0], train=False)
+                # why only train on first batch of val???
+                val_batch_cost, _, val_acc = model.train_on_batch(session, val_feature_minibatches[0], val_labels_minibatches[0], val_seqlens_minibatches[0], train=False)
 
-                # TODO add accuracy, loss                
-                log = "Epoch {}/{}, train_cost = {:.3f}, val_cost = {:.3f}, accuracy = {:.3f}, loss = {:.3f}, time = {:.3f}"
-                print(log.format(curr_epoch+1, Config.num_epochs, train_cost, val_batch_cost, acc, loss, time.time() - start))
+                log = "Epoch {}/{}, train_cost = {:.3f}, train_accuracy = {:.3f}, val_cost = {:.3f}, val_accuracy = {:.3f}, time = {:.3f}"
+                print(log.format(curr_epoch+1, Config.num_epochs, train_cost, train_acc, val_batch_cost, val_acc, time.time() - start))
 
                 if args.print_every is not None and (curr_epoch + 1) % args.print_every == 0: 
                     batch_ii = 0

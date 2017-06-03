@@ -145,6 +145,9 @@ class RNNModel():
         information, see:
 
         https://www.tensorflow.org/versions/r0.7/api_docs/python/train.html#Optimizer
+        
+        Examples: https://github.com/pbhatnagar3/cs224s-tensorflow-tutorial/blob/master/tensorflow%20MNIST.ipynb
+        https://github.com/aymericdamien/TensorFlow-Examples/blob/master/notebooks/3_NeuralNetworks/multilayer_perceptron.ipynb
         """
         optimizer = None 
 
@@ -199,9 +202,7 @@ class RNNModel():
         
 
     def train_on_batch(self, session, train_inputs_batch, train_targets_batch, train_seq_len_batch, train=True):
-        
-        # reshape to 2D
-        np.reshape(train_targets_batch, (np.shape(train_targets_batch)[0], 1))
+        # np.reshape(train_targets_batch, (np.shape(train_targets_batch)[0], 1))
 
         feed = self.create_feed_dict(train_inputs_batch, train_targets_batch, train_seq_len_batch)
 
@@ -218,8 +219,9 @@ class RNNModel():
     def print_results(self, train_inputs_batch, train_targets_batch, train_seq_len_batch):
         train_feed = self.create_feed_dict(train_inputs_batch, train_targets_batch, train_seq_len_batch)
         print("Testing Accuracy:", session.run(self.accuracy, feed_dict=train_feed))
+        # TODO add precision, recall, F1 score
 
-        # we have no decoded sequence
+        # deleted because we have no decoded sequence
         # train_first_batch_preds = session.run(self.decoded_sequence, feed_dict=train_feed)        
         # compare_predicted_to_true(train_first_batch_preds, train_targets_batch)
 

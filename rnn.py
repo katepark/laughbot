@@ -13,6 +13,7 @@ import os
 import tensorflow as tf
 import numpy as np
 from six.moves import xrange as range
+import sklearn.metrics as metrics
 
 from rnn_utils import *
 import pdb
@@ -28,6 +29,7 @@ class Config:
     context_size = 0
     num_mfcc_features = 13 #12 mfcc and 1 energy
     num_final_features = num_mfcc_features * (2 * context_size + 1)
+    num_timesteps = 50
 
     batch_size = 16	
     num_classes = 2 #laugh or no laugh
@@ -151,16 +153,19 @@ class RNNModel():
         """
         optimizer = None 
 
-        # logits [800, 2] -> reshaped logits [16, 50*2] to compare against targets [16]
+        # logits [16, 50, 2] -> grabbing last timestep to compare logits [16, 2] against targets [16]
         logits_shape = tf.shape(self.logits)
-        reshaped_logits = tf.reshape(self.logits, shape=[logits_shape[0], logits_shape[1]*logits_shape[2]])
-        
+        reshaped_logits = tf.slice(self.logits, [0, logits_shape[1] - 1, 0], [-1, 1, -1])
+        reshaped_logits = tf.reshape(reshaped_logits, shape=[logits_shape[0], logits_shape[2]])
+        # reshaped_logits = tf.reshape(self.logits, shape=[logits_shape[0], logits_shape[1]*logits_shape[2]])
+
         self.cost = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(logits=reshaped_logits, labels=self.targets_placeholder))
         optimizer = tf.train.AdamOptimizer(Config.lr).minimize(self.cost) 
         
         # HELP: second argument of argmax is 1 in example github, but error out of range so reshaped targets
         targets2d = tf.reshape(self.targets_placeholder, [tf.shape(self.targets_placeholder)[0],1])
 
+        self.pred = tf.argmax(reshaped_logits, 1)
         correct_pred = tf.equal(tf.argmax(reshaped_logits, 1), tf.argmax(targets2d, 1))
         self.accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
 
@@ -206,14 +211,14 @@ class RNNModel():
 
         feed = self.create_feed_dict(train_inputs_batch, train_targets_batch, train_seq_len_batch)
 
-        batch_cost, summary, acc = session.run([self.cost,self.merged_summary_op, self.accuracy], feed)
+        batch_cost, summary, acc, pred = session.run([self.cost, self.merged_summary_op, self.accuracy, self.pred], feed)
         
         if math.isnan(batch_cost): # basically all examples in this batch have been skipped 
             return 0
         if train:
             _ = session.run([self.optimizer], feed)
 
-        return batch_cost, summary, acc
+        return batch_cost, summary, acc, pred
 
 
     def print_results(self, train_inputs_batch, train_targets_batch, train_seq_len_batch, header):
@@ -245,7 +250,7 @@ if __name__ == "__main__":
     val_dataset = load_dataset(args.val_path)
 
     train_feature_minibatches, train_labels_minibatches, train_seqlens_minibatches = make_batches(train_dataset, batch_size=Config.batch_size)
-    val_feature_minibatches, val_labels_minibatches, val_seqlens_minibatches = make_batches(train_dataset, batch_size=len(val_dataset[0]))
+    val_feature_minibatches, val_labels_minibatches, val_seqlens_minibatches = make_batches(val_dataset, batch_size=len(val_dataset[0]))
 
     def pad_all_batches(batch_feature_array):
     	for batch_num in range(len(batch_feature_array)):
@@ -288,22 +293,32 @@ if __name__ == "__main__":
                 total_train_cost = 0
                 total_train_acc = 0
                 total_train_los = 0
+                true_positives = 0
+                false_positives = 0
+                false_negatives = 0
                 start = time.time()
 
                 for batch in random.sample(range(num_batches_per_epoch),num_batches_per_epoch):
                     cur_batch_size = len(train_seqlens_minibatches[batch])
-                    batch_cost, summary, acc = model.train_on_batch(session, train_feature_minibatches[batch], train_labels_minibatches[batch], train_seqlens_minibatches[batch], train=True)
+                    batch_cost, summary, acc, predicted = model.train_on_batch(session, train_feature_minibatches[batch], train_labels_minibatches[batch], train_seqlens_minibatches[batch], train=True)
                     total_train_cost += batch_cost * cur_batch_size
                     total_train_acc += acc * cur_batch_size
+                    actual = np.array(train_labels_minibatches[batch])
+                    true_positives += tf.count_nonzero(predicted * actual)
+                    false_positives += tf.count_nonzero(predicted * (actual - 1))
+                    false_negatives += tf.count_nonzero((predicted - 1) * actual)
 
                     train_writer.add_summary(summary, step_ii)
                     step_ii += 1 
 
                 train_cost = total_train_cost / num_examples
                 train_acc = total_train_acc / num_examples
+                train_precision = true_positives / (true_positives + false_positives)
+                train_recall = true_positives / (true_positives + false_negatives)
+                train_f1 = 2 * train_precision * train_recall / (train_precision + train_recall)
 
                 # why only train on first batch of val???
-                val_batch_cost, _, val_acc = model.train_on_batch(session, val_feature_minibatches[0], val_labels_minibatches[0], val_seqlens_minibatches[0], train=False)
+                val_batch_cost, _, val_acc, val_predicted = model.train_on_batch(session, val_feature_minibatches[0], val_labels_minibatches[0], val_seqlens_minibatches[0], train=False)
 
                 log = "Epoch {}/{}, train_cost = {:.3f}, train_accuracy = {:.3f}, mini_val_cost = {:.3f}, mini_val_accuracy = {:.3f}, time = {:.3f}"
                 print(log.format(curr_epoch+1, Config.num_epochs, train_cost, train_acc, val_batch_cost, val_acc, time.time() - start))
@@ -315,15 +330,25 @@ if __name__ == "__main__":
                     
                     total_val_cost = 0
                     total_val_acc = 0
+                    val_true_positives = 0
+                    val_false_positives = 0
+                    val_false_negatives = 0
                     # ERROR len(val_seqlens_minibatches) != val_num_batches_per_epoch
                     for batch in random.sample(range(len(val_seqlens_minibatches)),len(val_seqlens_minibatches)):
                         cur_batch_size = len(val_seqlens_minibatches[batch])
-                        val_batch_cost, _, val_acc = model.train_on_batch(session, val_feature_minibatches[batch], val_labels_minibatches[batch], val_seqlens_minibatches[batch], train=False)
+                        val_batch_cost, _, val_acc, predicted = model.train_on_batch(session, val_feature_minibatches[batch], val_labels_minibatches[batch], val_seqlens_minibatches[batch], train=False)
                         total_val_cost += val_batch_cost * cur_batch_size
                         total_val_acc += val_acc * cur_batch_size
+                        actual = np.array(train_labels_minibatches[batch])
+                        val_true_positives += tf.count_nonzero(predicted * actual)
+                        val_false_positives += tf.count_nonzero(predicted * (actual - 1))
+                        val_false_negatives += tf.count_nonzero((predicted - 1) * actual)
 
                     val_cost = total_val_cost / val_num_examples
                     val_acc = total_val_acc / val_num_examples
+                    val_precision = val_true_positives / (val_true_positives + val_false_positives)
+                    val_recall = val_true_positives / (val_true_positives + val_false_negatives)
+                    val_f1 = 2 * val_precision * val_recall / (val_precision + val_recall)
                     log = "total_val_cost = {:.3f}, total_val_accuracy = {:.3f}, time = {:.3f}"
                     print(log.format(val_cost, val_acc, time.time() - start))
 

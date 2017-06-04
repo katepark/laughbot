@@ -264,10 +264,10 @@ if __name__ == "__main__":
     num_batches_per_epoch = int(math.ceil(num_examples / Config.batch_size))
     
     val_num_examples = np.sum([batch.shape[0] for batch in val_feature_minibatches])
-    val_num_batches_per_epoch = int(math.ceil(val_num_examples / Config.batch_size))
+    val_num_batches_per_epoch = int(math.ceil(val_num_examples / len(val_dataset[0])))
 
-    print('num batches per epoch. train', num_batches_per_epoch, 'val', val_num_batches_per_epoch)
-    print('seqlen train', len(train_seqlens_minibatches), 'val', len(val_seqlens_minibatches))
+    print('TRAIN: ', 'num_ex', num_examples, 'num batches per epoch', num_batches_per_epoch, 'len of seq lens', len(train_seqlens_minibatches), 'len of labels', len(train_labels_minibatches))
+    print('VAL: ', 'num_ex', val_num_examples, 'num batches per epoch', val_num_batches_per_epoch, 'len of seq lens', len(val_seqlens_minibatches), 'len of labels', len(val_labels_minibatches))
 
     with tf.Graph().as_default():
         model = RNNModel() 
@@ -317,7 +317,7 @@ if __name__ == "__main__":
                 train_recall = true_positives / (true_positives + false_negatives)
                 train_f1 = 2 * train_precision * train_recall / (train_precision + train_recall)
 
-                # why only train on first batch of val???
+                # only 1 batch in val
                 val_batch_cost, _, val_acc, val_predicted = model.train_on_batch(session, val_feature_minibatches[0], val_labels_minibatches[0], val_seqlens_minibatches[0], train=False)
 
                 log = "Epoch {}/{}, train_cost = {:.3f}, train_accuracy = {:.3f}, mini_val_cost = {:.3f}, mini_val_accuracy = {:.3f}, time = {:.3f}"
@@ -333,6 +333,7 @@ if __name__ == "__main__":
                     val_true_positives = 0
                     val_false_positives = 0
                     val_false_negatives = 0
+                    
                     # ERROR len(val_seqlens_minibatches) != val_num_batches_per_epoch
                     for batch in random.sample(range(len(val_seqlens_minibatches)),len(val_seqlens_minibatches)):
                         cur_batch_size = len(val_seqlens_minibatches[batch])

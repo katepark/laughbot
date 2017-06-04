@@ -290,12 +290,13 @@ if __name__ == "__main__":
             step_ii = 0
 
             for curr_epoch in range(Config.num_epochs):
-                total_train_cost = 0
-                total_train_acc = 0
-                total_train_los = 0
+                total_train_cost = 0.0
+                total_train_acc = 0.0
+                # total_train_los = 0.0
                 true_positives = 0
                 false_positives = 0
                 false_negatives = 0
+                true_negatives = 0
                 start = time.time()
 
                 for batch in random.sample(range(num_batches_per_epoch),num_batches_per_epoch):
@@ -305,16 +306,20 @@ if __name__ == "__main__":
                     total_train_acc += acc * cur_batch_size
                     actual = np.array(train_labels_minibatches[batch])
                     true_positives += tf.count_nonzero(predicted * actual)
+                    true_negatives += tf.count_nonzero((predicted - 1) * (actual - 1))
                     false_positives += tf.count_nonzero(predicted * (actual - 1))
                     false_negatives += tf.count_nonzero((predicted - 1) * actual)
 
                     train_writer.add_summary(summary, step_ii)
                     step_ii += 1 
 
-                train_cost = total_train_cost / num_examples
-                train_acc = total_train_acc / num_examples
-                train_precision = true_positives / (true_positives + false_positives)
-                train_recall = true_positives / (true_positives + false_negatives)
+                train_cost = (total_train_cost) / num_examples
+                train_acc = (total_train_acc) / num_examples
+
+                # TODO: print these along with tp, tn, fp, fn
+                train_acc2 = (true_positives + true_negatives) / (true_negatives + true_positives + false_positives + false_negatives)
+                train_precision = (true_positives) / (true_positives + false_positives)
+                train_recall = (true_positives) / (true_positives + false_negatives)
                 train_f1 = 2 * train_precision * train_recall / (train_precision + train_recall)
 
                 # only 1 batch in val
@@ -327,31 +332,36 @@ if __name__ == "__main__":
                     batch_ii = 0
                     model.print_results(train_feature_minibatches[batch_ii], train_labels_minibatches[batch_ii], train_seqlens_minibatches[batch_ii], "Training: " + str(batch_ii) + ': ')
                     model.print_results(val_feature_minibatches[batch_ii], val_labels_minibatches[batch_ii], val_seqlens_minibatches[batch_ii], "Validation: " + str(batch_ii) + ': ')
-                    
-                    total_val_cost = 0
-                    total_val_acc = 0
+
+                    #total_val_cost = 0
+                    #total_val_acc = 0
                     val_true_positives = 0
                     val_false_positives = 0
                     val_false_negatives = 0
-                    
-                    # ERROR len(val_seqlens_minibatches) != val_num_batches_per_epoch
-                    for batch in random.sample(range(len(val_seqlens_minibatches)),len(val_seqlens_minibatches)):
-                        cur_batch_size = len(val_seqlens_minibatches[batch])
-                        val_batch_cost, _, val_acc, predicted = model.train_on_batch(session, val_feature_minibatches[batch], val_labels_minibatches[batch], val_seqlens_minibatches[batch], train=False)
-                        total_val_cost += val_batch_cost * cur_batch_size
-                        total_val_acc += val_acc * cur_batch_size
-                        actual = np.array(train_labels_minibatches[batch])
-                        val_true_positives += tf.count_nonzero(predicted * actual)
-                        val_false_positives += tf.count_nonzero(predicted * (actual - 1))
-                        val_false_negatives += tf.count_nonzero((predicted - 1) * actual)
+                    val_true_negatives = 0
+                    # RUN on val data set
+                    # cur_batch_size = len(val_seqlens_minibatches[0])
+                    total_val_cost, _, total_val_acc, predicted = model.train_on_batch(session, val_feature_minibatches[0], val_labels_minibatches[0], val_seqlens_minibatches[0], train=False)
+                    #total_val_cost += val_batch_cost * cur_batch_size
+                    #total_val_acc += val_acc * cur_batch_size
+                    actual = np.array(val_labels_minibatches[0])
+                    val_true_positives += tf.count_nonzero(predicted * actual)
+                    val_true_negatives += tf.count_nonzero((predicted - 1) * (actual - 1))
+                    val_false_positives += tf.count_nonzero(predicted * (actual - 1))
+                    val_false_negatives += tf.count_nonzero((predicted - 1) * actual)
 
-                    val_cost = total_val_cost / val_num_examples
-                    val_acc = total_val_acc / val_num_examples
+                    # val_cost = total_val_cost / val_num_examples
+                    # val_acc = total_val_acc / val_num_examples
+                    
+                    # TODO: print these along with tp, tn, fp, fn
+
+                    val_acc2 = (val_true_positives + val_true_negatives) / (val_true_positives + val_true_negatives + val_false_positives + val_false_negatives)
                     val_precision = val_true_positives / (val_true_positives + val_false_positives)
                     val_recall = val_true_positives / (val_true_positives + val_false_negatives)
                     val_f1 = 2 * val_precision * val_recall / (val_precision + val_recall)
+                    
                     log = "total_val_cost = {:.3f}, total_val_accuracy = {:.3f}, time = {:.3f}"
-                    print(log.format(val_cost, val_acc, time.time() - start))
+                    print(log.format(total_val_cost, total_val_acc, time.time() - start))
 
                 if args.save_every is not None and args.save_to_file is not None and (curr_epoch + 1) % args.save_every == 0:
                 	saver.save(session, args.save_to_file, global_step=curr_epoch + 1)

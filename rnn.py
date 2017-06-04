@@ -132,7 +132,7 @@ class RNNModel():
         logits = tf.reshape(logits, shape=[outputsShape[0], outputsShape[1], Config.num_classes])
 
         ### END YOUR CODE
-        self.last_hidden_state = state # TOO: pass these last hidden states as a feature for determining humor
+        self.last_hidden_state = state # TODO: pass these last hidden states as a feature for determining humor
         print('last hidden state', state)
         self.logits = logits
 
@@ -216,20 +216,18 @@ class RNNModel():
         return batch_cost, summary, acc
 
 
-    def print_results(self, train_inputs_batch, train_targets_batch, train_seq_len_batch):
+    def print_results(self, train_inputs_batch, train_targets_batch, train_seq_len_batch, header):
         train_feed = self.create_feed_dict(train_inputs_batch, train_targets_batch, train_seq_len_batch)
-        print("Testing Accuracy:", session.run(self.accuracy, feed_dict=train_feed))
+        print(header + str(session.run(self.accuracy, feed_dict=train_feed)))
         # TODO add precision, recall, F1 score
 
         # deleted because we have no decoded sequence
         # train_first_batch_preds = session.run(self.decoded_sequence, feed_dict=train_feed)        
         # compare_predicted_to_true(train_first_batch_preds, train_targets_batch)
 
-
     def __init__(self):
         self.build()
 
-#def get_features_from_rnn(): 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--train_path', nargs='?', default='./switchboardaudiosmall.train.pkl', type=str, help="Give path to training data")
@@ -260,6 +258,12 @@ if __name__ == "__main__":
     num_examples = np.sum([batch.shape[0] for batch in train_feature_minibatches])
     num_batches_per_epoch = int(math.ceil(num_examples / Config.batch_size))
     
+    val_num_examples = np.sum([batch.shape[0] for batch in val_feature_minibatches])
+    val_num_batches_per_epoch = int(math.ceil(val_num_examples / Config.batch_size))
+
+    print('num batches per epoch. train', num_batches_per_epoch, 'val', val_num_batches_per_epoch)
+    print('seqlen train', len(train_seqlens_minibatches), 'val', len(val_seqlens_minibatches))
+
     with tf.Graph().as_default():
         model = RNNModel() 
         model.set_num_examples(num_examples)
@@ -288,7 +292,6 @@ if __name__ == "__main__":
 
                 for batch in random.sample(range(num_batches_per_epoch),num_batches_per_epoch):
                     cur_batch_size = len(train_seqlens_minibatches[batch])
-
                     batch_cost, summary, acc = model.train_on_batch(session, train_feature_minibatches[batch], train_labels_minibatches[batch], train_seqlens_minibatches[batch], train=True)
                     total_train_cost += batch_cost * cur_batch_size
                     total_train_acc += acc * cur_batch_size
@@ -296,19 +299,33 @@ if __name__ == "__main__":
                     train_writer.add_summary(summary, step_ii)
                     step_ii += 1 
 
-                    
                 train_cost = total_train_cost / num_examples
                 train_acc = total_train_acc / num_examples
 
                 # why only train on first batch of val???
                 val_batch_cost, _, val_acc = model.train_on_batch(session, val_feature_minibatches[0], val_labels_minibatches[0], val_seqlens_minibatches[0], train=False)
 
-                log = "Epoch {}/{}, train_cost = {:.3f}, train_accuracy = {:.3f}, val_cost = {:.3f}, val_accuracy = {:.3f}, time = {:.3f}"
+                log = "Epoch {}/{}, train_cost = {:.3f}, train_accuracy = {:.3f}, mini_val_cost = {:.3f}, mini_val_accuracy = {:.3f}, time = {:.3f}"
                 print(log.format(curr_epoch+1, Config.num_epochs, train_cost, train_acc, val_batch_cost, val_acc, time.time() - start))
 
                 if args.print_every is not None and (curr_epoch + 1) % args.print_every == 0: 
                     batch_ii = 0
-                    model.print_results(train_feature_minibatches[batch_ii], train_labels_minibatches[batch_ii], train_seqlens_minibatches[batch_ii])
+                    model.print_results(train_feature_minibatches[batch_ii], train_labels_minibatches[batch_ii], train_seqlens_minibatches[batch_ii], "Training: " + str(batch_ii) + ': ')
+                    model.print_results(val_feature_minibatches[batch_ii], val_labels_minibatches[batch_ii], val_seqlens_minibatches[batch_ii], "Validation: " + str(batch_ii) + ': ')
+                    
+                    total_val_cost = 0
+                    total_val_acc = 0
+                    # ERROR len(val_seqlens_minibatches) != val_num_batches_per_epoch
+                    for batch in random.sample(range(len(val_seqlens_minibatches)),len(val_seqlens_minibatches)):
+                        cur_batch_size = len(val_seqlens_minibatches[batch])
+                        val_batch_cost, _, val_acc = model.train_on_batch(session, val_feature_minibatches[batch], val_labels_minibatches[batch], val_seqlens_minibatches[batch], train=False)
+                        total_val_cost += val_batch_cost * cur_batch_size
+                        total_val_acc += val_acc * cur_batch_size
+
+                    val_cost = total_val_cost / val_num_examples
+                    val_acc = total_val_acc / val_num_examples
+                    log = "total_val_cost = {:.3f}, total_val_accuracy = {:.3f}, time = {:.3f}"
+                    print(log.format(val_cost, val_acc, time.time() - start))
 
                 if args.save_every is not None and args.save_to_file is not None and (curr_epoch + 1) % args.save_every == 0:
                 	saver.save(session, args.save_to_file, global_step=curr_epoch + 1)

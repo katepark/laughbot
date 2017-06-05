@@ -49,14 +49,17 @@ def fitModel(examples, acoustic, vocab=None, frequent_ngram_col_idx=None):
 
 
 #http://www.nltk.org/book/ch06.html
-#Cite SentiWordNet for positivity, negativity, objectivity (http://sentiwordnet.isti.cnr.it/)
 def contextualFeatures(examples, fullfeature, acoustic):
+    '''
+        Adds other language features: part of speech (4 features), length of line, avg_word length, sentiment
+        Used: (http://sentiwordnet.isti.cnr.it/)
+        Also adds acoustic features from RNN Model if given
+    '''
     print 'len of examples', len(examples), 'len full feature', len(fullfeature), 'len acoustic', len(acoustic)
     add_features = np.zeros((len(fullfeature), 9)) #5 new features added (pos has 4 elems) last feature acoustic
     sid = SentimentIntensityAnalyzer()
     for line in xrange(len(examples)): 
         #features added: pos, punchline_len, avg_word_len, sentiment
-        
         punchline = examples[line][0].split()
         add_features[line][:5] = extract_pos(punchline) #parts of speech (pos)
         add_features[line][5] = len(punchline) #punchline_len
@@ -68,6 +71,7 @@ def contextualFeatures(examples, fullfeature, acoustic):
 
         ss = sid.polarity_scores(examples[line][0])
         add_features[line][7], ss["compound"] #sentiment
+        #add acoustic feature
         add_features[line][8], acoustic[line]
 
     fullfeature = np.hstack((fullfeature, add_features))
@@ -116,7 +120,7 @@ def learnPredictor(trainExamples, trainacoustic, testExamples, valacoustic):
         regr.fit(trainX, trainY)
         print "END: TRAINING"
         trainPredict = regr.predict(trainX)
-        devPredict = regr.predict(devX)
+        # devPredict = regr.predict(devX)
         testPredict = regr.predict(testX)
         precision,recall,fscore,support = precision_recall_fscore_support(trainY, trainPredict, average='binary')
         print "LOGISTIC TRAIN scores:\n\tPrecision:%f\n\tRecall:%f\n\tF1:%f" % (precision, recall, fscore)
@@ -179,7 +183,7 @@ trainExamples = util.readExamples('switchboardsamplesmall.train')
 valExamples = util.readExamples('switchboardsamplesmall.val')
 testExamples = util.readExamples('switchboardsamplesmall.test')
 compareExamples = valExamples
-vocabulary, freq_col_idx, regr = learnPredictor(trainExamples, valExamples)
+vocabulary, freq_col_idx, regr = learnPredictor(trainExamples, None, valExamples, None)
 allPosNegBaseline(trainExamples, valExamples)
 realtimePredict(vocabulary, freq_col_idx, regr)
 '''

@@ -14,7 +14,7 @@ import tensorflow as tf
 import numpy as np
 from six.moves import xrange as range
 import sklearn.metrics as metrics
-
+from languagemodel import  *
 from rnn_utils import *
 import pdb
 from time import gmtime, strftime
@@ -35,7 +35,7 @@ class Config:
     num_classes = 2 #laugh or no laugh
     num_hidden = 1 #was 128, we only need the "last one", so try with just 1
 
-    num_epochs = 50 #was 50, tune later, look at graph to see if it's enough
+    num_epochs = 10 #was 50, tune later, look at graph to see if it's enough
     # l2_lambda = 0.0000001
     lr = 1e-2
 
@@ -211,14 +211,14 @@ class RNNModel():
 
         feed = self.create_feed_dict(train_inputs_batch, train_targets_batch, train_seq_len_batch)
 
-        batch_cost, summary, acc, pred = session.run([self.cost, self.merged_summary_op, self.accuracy, self.pred], feed)
+        batch_cost, summary, acc, pred, acoustic_features = session.run([self.cost, self.merged_summary_op, self.accuracy, self.pred, self.last_hidden_state], feed)
         
         if math.isnan(batch_cost): # basically all examples in this batch have been skipped 
             return 0
         if train:
             _ = session.run([self.optimizer], feed)
 
-        return batch_cost, summary, acc, pred
+        return batch_cost, summary, acc, pred, acoustic_features
 
 
     def print_results(self, train_inputs_batch, train_targets_batch, train_seq_len_batch, header):
@@ -233,6 +233,18 @@ class RNNModel():
     def __init__(self):
         self.build()
 
+def run_language_model(acoustic_features, val_acoustic):
+    print(acoustic_features[:10])
+    print(val_acoustic[:10])
+    trainExamples = util.readExamples('switchboardsamplesmall.train')
+    valExamples = util.readExamples('switchboardsamplesmall.val')
+    testExamples = util.readExamples('switchboardsamplesmall.test')
+    compareExamples = valExamples
+    # compareExamples = testExamples
+    vocabulary, freq_col_idx, regr = learnPredictor(trainExamples, acoustic_features, compareExamples, val_acoustic)
+    allPosNegBaseline(trainExamples, compareExamples)
+    realtimePredict(vocabulary, freq_col_idx, regr)
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--train_path', nargs='?', default='./switchboardaudiosmall.train.pkl', type=str, help="Give path to training data")
@@ -246,8 +258,10 @@ if __name__ == "__main__":
     logs_path = "tensorboard/" + strftime("%Y_%m_%d_%H_%M_%S", gmtime())
 
     train_dataset = load_dataset(args.train_path)
-    
     val_dataset = load_dataset(args.val_path)
+
+    ex, label, seq = train_dataset
+    print('TRAIN: ', len(ex), len(label), len(seq))
 
     train_feature_minibatches, train_labels_minibatches, train_seqlens_minibatches = make_batches(train_dataset, batch_size=Config.batch_size)
     val_feature_minibatches, val_labels_minibatches, val_seqlens_minibatches = make_batches(val_dataset, batch_size=len(val_dataset[0]))
@@ -298,10 +312,11 @@ if __name__ == "__main__":
                 false_negatives = 0
                 true_negatives = 0
                 start = time.time()
+                total_acoustic_features = []
 
                 for batch in random.sample(range(num_batches_per_epoch),num_batches_per_epoch):
                     cur_batch_size = len(train_seqlens_minibatches[batch])
-                    batch_cost, summary, acc, predicted = model.train_on_batch(session, train_feature_minibatches[batch], train_labels_minibatches[batch], train_seqlens_minibatches[batch], train=True)
+                    batch_cost, summary, acc, predicted, acoustic = model.train_on_batch(session, train_feature_minibatches[batch], train_labels_minibatches[batch], train_seqlens_minibatches[batch], train=True)
                     total_train_cost += batch_cost * cur_batch_size
                     total_train_acc += acc * cur_batch_size
                     actual = np.array(train_labels_minibatches[batch])
@@ -309,7 +324,8 @@ if __name__ == "__main__":
                     true_negatives += tf.count_nonzero((predicted - 1) * (actual - 1))
                     false_positives += tf.count_nonzero(predicted * (actual - 1))
                     false_negatives += tf.count_nonzero((predicted - 1) * actual)
-
+                    for x in acoustic:
+                        total_acoustic_features.append(x)
                     train_writer.add_summary(summary, step_ii)
                     step_ii += 1 
 
@@ -323,15 +339,15 @@ if __name__ == "__main__":
                 train_f1 = 2 * train_precision * train_recall / (train_precision + train_recall)
 
                 # only 1 batch in val
-                val_batch_cost, _, val_acc, val_predicted = model.train_on_batch(session, val_feature_minibatches[0], val_labels_minibatches[0], val_seqlens_minibatches[0], train=False)
+                val_batch_cost, _, val_acc, val_predicted, val_acoustic_features = model.train_on_batch(session, val_feature_minibatches[0], val_labels_minibatches[0], val_seqlens_minibatches[0], train=False)
 
                 log = "Epoch {}/{}, train_cost = {:.3f}, train_accuracy = {:.3f}, mini_val_cost = {:.3f}, mini_val_accuracy = {:.3f}, time = {:.3f}"
                 print(log.format(curr_epoch+1, Config.num_epochs, train_cost, train_acc, val_batch_cost, val_acc, time.time() - start))
 
                 if args.print_every is not None and (curr_epoch + 1) % args.print_every == 0: 
                     batch_ii = 0
-                    model.print_results(train_feature_minibatches[batch_ii], train_labels_minibatches[batch_ii], train_seqlens_minibatches[batch_ii], "Training: " + str(batch_ii) + ': ')
-                    model.print_results(val_feature_minibatches[batch_ii], val_labels_minibatches[batch_ii], val_seqlens_minibatches[batch_ii], "Validation: " + str(batch_ii) + ': ')
+                    # model.print_results(train_feature_minibatches[batch_ii], train_labels_minibatches[batch_ii], train_seqlens_minibatches[batch_ii], "Training: " + str(batch_ii) + ': ')
+                    # model.print_results(val_feature_minibatches[batch_ii], val_labels_minibatches[batch_ii], val_seqlens_minibatches[batch_ii], "Validation: " + str(batch_ii) + ': ')
 
                     #total_val_cost = 0
                     #total_val_acc = 0
@@ -339,9 +355,11 @@ if __name__ == "__main__":
                     val_false_positives = 0
                     val_false_negatives = 0
                     val_true_negatives = 0
+                    total_val_acoustic_features = []
+
                     # RUN on val data set
                     # cur_batch_size = len(val_seqlens_minibatches[0])
-                    total_val_cost, _, total_val_acc, predicted = model.train_on_batch(session, val_feature_minibatches[0], val_labels_minibatches[0], val_seqlens_minibatches[0], train=False)
+                    total_val_cost, _, total_val_acc, predicted, val_acoustic = model.train_on_batch(session, val_feature_minibatches[0], val_labels_minibatches[0], val_seqlens_minibatches[0], train=False)
                     #total_val_cost += val_batch_cost * cur_batch_size
                     #total_val_acc += val_acc * cur_batch_size
                     actual = np.array(val_labels_minibatches[0])
@@ -349,7 +367,8 @@ if __name__ == "__main__":
                     val_true_negatives += tf.count_nonzero((predicted - 1) * (actual - 1))
                     val_false_positives += tf.count_nonzero(predicted * (actual - 1))
                     val_false_negatives += tf.count_nonzero((predicted - 1) * actual)
-
+                    for x in val_acoustic:
+                        total_val_acoustic_features.append(x)
                     # val_cost = total_val_cost / val_num_examples
                     # val_acc = total_val_acc / val_num_examples
                     
@@ -365,3 +384,11 @@ if __name__ == "__main__":
 
                 if args.save_every is not None and args.save_to_file is not None and (curr_epoch + 1) % args.save_every == 0:
                 	saver.save(session, args.save_to_file, global_step=curr_epoch + 1)
+
+            print('---Running language model----')
+            total_acoustic_features = np.ndarray.flatten(np.array(total_acoustic_features))
+            total_val_acoustic_features = np.ndarray.flatten(np.array(total_val_acoustic_features))
+            print('train acoustic len', len(total_acoustic_features))
+            print('val acoustic len', len(total_val_acoustic_features))
+
+            run_language_model(total_acoustic_features, total_val_acoustic_features)

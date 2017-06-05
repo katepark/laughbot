@@ -15,11 +15,11 @@ ngram_threshold = 7
 # 5 .432
 # 6 .424
 
-def fitModel(examples, vocab=None, frequent_ngram_col_idx=None):
+def fitModel(examples, acoustic, vocab=None, frequent_ngram_col_idx=None):
         corpus = []
         for x,y in examples:
             corpus.append(x)
-            print x
+            # print x
         vectorizer = CountVectorizer(vocabulary=vocab, ngram_range=(1, 3),token_pattern=r'\b\w+\b', min_df=1)
         X = vectorizer.fit_transform(corpus)
         
@@ -41,7 +41,7 @@ def fitModel(examples, vocab=None, frequent_ngram_col_idx=None):
         '''
         #Add features from grammatical context in transcript
 
-        fullfeature = contextualFeatures(examples, fullfeature)
+        fullfeature = contextualFeatures(examples, fullfeature, acoustic)
 
         print 'CONTEXTUAL SHAPE', len(fullfeature), len(fullfeature[0])
         # return vectorizer
@@ -50,8 +50,9 @@ def fitModel(examples, vocab=None, frequent_ngram_col_idx=None):
 
 #http://www.nltk.org/book/ch06.html
 #Cite SentiWordNet for positivity, negativity, objectivity (http://sentiwordnet.isti.cnr.it/)
-def contextualFeatures(examples, fullfeature):
-    add_features = np.zeros((len(fullfeature), 8)) #4 new features added (pos has 4 elems)
+def contextualFeatures(examples, fullfeature, acoustic):
+    print 'len of examples', len(examples), 'len full feature', len(fullfeature), 'len acoustic', len(acoustic)
+    add_features = np.zeros((len(fullfeature), 9)) #5 new features added (pos has 4 elems) last feature acoustic
     sid = SentimentIntensityAnalyzer()
     for line in xrange(len(examples)): 
         #features added: pos, punchline_len, avg_word_len, sentiment
@@ -67,6 +68,7 @@ def contextualFeatures(examples, fullfeature):
 
         ss = sid.polarity_scores(examples[line][0])
         add_features[line][7], ss["compound"] #sentiment
+        add_features[line][8], acoustic[line]
 
     fullfeature = np.hstack((fullfeature, add_features))
     return fullfeature
@@ -88,22 +90,23 @@ def extract_pos(punchline): #parts of speech
         return np.array([noun, verb, pron, adj, adv])
 
     	
-def learnPredictor(trainExamples, devExamples, testExamples):
+def learnPredictor(trainExamples, trainacoustic, testExamples, valacoustic):
     	print 'BEGIN: GENERATE TRAIN'
-        trainFeatures, vocabulary, freq_col_idx = fitModel(trainExamples)
+        trainFeatures, vocabulary, freq_col_idx = fitModel(trainExamples, trainacoustic)
         trainX = trainFeatures
     	trainY = [y for x,y in trainExamples]
 
     	print 'END: GENERATE TRAIN'
     	
+        '''
         print 'BEGIN: GENERATE DEV'
         devFeatures, _, freq_col_idx_dev = fitModel(devExamples, vocab=vocabulary, frequent_ngram_col_idx=freq_col_idx)
         devX = devFeatures
         devY = [y for x,y in devExamples]
         print 'END: GENERATE DEV'
-        
+        '''
         print 'BEGIN: GENERATE TEST'
-        testFeatures, _, freq_col_idx_test = fitModel(testExamples, vocab=vocabulary, frequent_ngram_col_idx=freq_col_idx)
+        testFeatures, _, freq_col_idx_test = fitModel(testExamples, valacoustic, vocab=vocabulary, frequent_ngram_col_idx=freq_col_idx)
         testX = testFeatures
         testY = [y for x,y in testExamples]
     	print 'END: GENERATE TEST'
@@ -118,24 +121,21 @@ def learnPredictor(trainExamples, devExamples, testExamples):
         precision,recall,fscore,support = precision_recall_fscore_support(trainY, trainPredict, average='binary')
         print "LOGISTIC TRAIN scores:\n\tPrecision:%f\n\tRecall:%f\n\tF1:%f" % (precision, recall, fscore)
         
+        '''
         precision,recall,fscore,support = precision_recall_fscore_support(devY, devPredict, average='binary')
         print "LOGISTIC DEV scores:\n\tPrecision:%f\n\tRecall:%f\n\tF1:%f" % (precision, recall, fscore)
-
+        '''
         precision,recall,fscore,support = precision_recall_fscore_support(testY, testPredict, average='binary')
         print "LOGISTIC TEST scores:\n\tPrecision:%f\n\tRecall:%f\n\tF1:%f" % (precision, recall, fscore)
         return vocabulary, freq_col_idx, regr
 
-def allPosNegBaseline(trainExamples, devExamples, testExamples):
+def allPosNegBaseline(trainExamples, testExamples):
     print 'ALL POSITIVE TRAIN scores:'
-    allPos(trainExamples)
-    print 'ALL POSITIVE DEV scores:'
-    allPos(devExamples)    
+    allPos(trainExamples)  
     print 'ALL POSITIVE TEST scores:'
     allPos(testExamples)
     print 'ALL NEGATIVE TRAIN scores:'
     allNeg(trainExamples)
-    print 'ALL NEGATIVE DEV scores:'
-    allNeg(devExamples)
     print 'ALL NEGATIVE TEST scores:'
     allNeg(testExamples)
 
@@ -174,10 +174,12 @@ def realtimePredict(vocabulary, freq_col_idx, regr):
         print 'Your punchline was funny: ', predict[0]
         x = raw_input('Give me a punchline: ')
 
-
-trainExamples = util.readExamples('switchboardsampleL.train')
-valExamples = util.readExamples('switchboardsampleL.val')
-testExamples = util.readExamples('switchboardsampleL.test')
-vocabulary, freq_col_idx, regr = learnPredictor(trainExamples, valExamples, testExamples)
-allPosNegBaseline(trainExamples, valExamples, testExamples)
+'''
+trainExamples = util.readExamples('switchboardsamplesmall.train')
+valExamples = util.readExamples('switchboardsamplesmall.val')
+testExamples = util.readExamples('switchboardsamplesmall.test')
+compareExamples = valExamples
+vocabulary, freq_col_idx, regr = learnPredictor(trainExamples, valExamples)
+allPosNegBaseline(trainExamples, valExamples)
 realtimePredict(vocabulary, freq_col_idx, regr)
+'''

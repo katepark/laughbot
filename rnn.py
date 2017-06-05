@@ -135,7 +135,7 @@ class RNNModel():
 
         ### END YOUR CODE
         self.last_hidden_state = state # TODO: pass these last hidden states as a feature for determining humor
-        print('last hidden state', state)
+        # print('last hidden state', state)
         self.logits = logits
 
 
@@ -157,6 +157,7 @@ class RNNModel():
         logits_shape = tf.shape(self.logits)
         reshaped_logits = tf.slice(self.logits, [0, logits_shape[1] - 1, 0], [-1, 1, -1])
         reshaped_logits = tf.reshape(reshaped_logits, shape=[logits_shape[0], logits_shape[2]])
+
         # reshaped_logits = tf.reshape(self.logits, shape=[logits_shape[0], logits_shape[1]*logits_shape[2]])
 
         self.cost = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(logits=reshaped_logits, labels=self.targets_placeholder))
@@ -166,6 +167,7 @@ class RNNModel():
         targets2d = tf.reshape(self.targets_placeholder, [tf.shape(self.targets_placeholder)[0],1])
 
         self.pred = tf.argmax(reshaped_logits, 1)
+        # self.last_hidden_state = self.pred
         correct_pred = tf.equal(tf.argmax(reshaped_logits, 1), tf.argmax(targets2d, 1))
         self.accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
 
@@ -234,8 +236,8 @@ class RNNModel():
         self.build()
 
 def run_language_model(acoustic_features, val_acoustic):
-    print(acoustic_features[:10])
-    print(val_acoustic[:10])
+    print(acoustic_features[:100])
+    print(val_acoustic[:100])
     trainExamples = util.readExamples('switchboardsamplesmall.train')
     valExamples = util.readExamples('switchboardsamplesmall.val')
     testExamples = util.readExamples('switchboardsamplesmall.test')

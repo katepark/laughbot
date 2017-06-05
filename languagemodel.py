@@ -15,7 +15,7 @@ ngram_threshold = 7
 # 5 .432
 # 6 .424
 
-def fitModel(examples, acoustic, vocab=None, frequent_ngram_col_idx=None):
+def fitModel(examples, acoustic=None, vocab=None, frequent_ngram_col_idx=None):
         corpus = []
         for x,y in examples:
             corpus.append(x)
@@ -173,7 +173,7 @@ def realtimePredict(vocabulary, freq_col_idx, regr):
     while (x):
         examples = []
         examples.append((x, 0))
-        feature, _, _ = fitModel(examples, vocab=vocabulary, frequent_ngram_col_idx=freq_col_idx)
+        feature, _, _ = fitModel(examples, None, vocab=vocabulary, frequent_ngram_col_idx=freq_col_idx)
         predict = regr.predict(feature)
         print 'Your punchline was funny: ', predict[0]
         x = raw_input('Give me a punchline: ')

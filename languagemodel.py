@@ -23,8 +23,10 @@ def fitModel(examples, acoustic=None, vocab=None, frequent_ngram_col_idx=None):
         vectorizer = CountVectorizer(vocabulary=vocab, ngram_range=(1, 3),token_pattern=r'\b\w+\b', min_df=1)
         X = vectorizer.fit_transform(corpus)
         
+        # UNCOMMENT TO ADD NGRAM FEATURES
         # analyze = vectorizer.build_analyzer()
-        fullfeature = X.toarray()
+        # fullfeature = X.toarray()
+        fullfeature = np.zeros((len(examples), 2))
         
         print 'SHAPE', len(fullfeature), len(fullfeature[0])
 
@@ -120,6 +122,7 @@ def learnPredictor(trainExamples, trainacoustic, testExamples, valacoustic):
         regr.fit(trainX, trainY)
         print "END: TRAINING"
         trainPredict = regr.predict(trainX)
+        print "coefficient of acoustic", regr.coef_
         # devPredict = regr.predict(devX)
         testPredict = regr.predict(testX)
         precision,recall,fscore,support = precision_recall_fscore_support(trainY, trainPredict, average='binary')

@@ -45,7 +45,7 @@ with sr.Microphone() as source:
 
 # recognize speech using Google Cloud Speech
 #If credentials not specified, the library will try to automatically `find the default API credentials JSON file <https://developers.google.com/identity/protocols/application-default-credentials>`__.
-#used to be CS224s-Laughbot-cdb7a14ba039.json
+#currently this default is an environment variable set as "./service_account_key.json". used to be CS224s-Laughbot-cdb7a14ba039.json
 '''GOOGLE_CLOUD_SPEECH_CREDENTIALS = {}''' #If default credentials not working from the environment variable, insert credentials here and add to r.recognize_google_cloud call
 try:
     print("Google Cloud Speech thinks you said " + r.recognize_google_cloud(audio))#, credentials_json=GOOGLE_CLOUD_SPEECH_CREDENTIALS))
@@ -57,42 +57,4 @@ except sr.RequestError as e:
 
 
 
-
-
-#The Cloud Speech API v1 is officially released and is generally available from the https://speech.googleapis.com/v1/speech endpoint
-
-'''from oauth2client.client import GoogleCredentials
-credentials = GoogleCredentials.get_application_default()
-
-#https://cloud.google.com/docs/authentication
-def create_service():
-    """Creates the service object for calling the Cloud Storage API."""
-    # Construct the service object for interacting with the Cloud Storage API -
-    # the 'storage' service, at version 'v1'.
-    # You can browse other available api services and versions here:
-    #     https://developers.google.com/api-client-library/python/apis/
-    return googleapiclient.discovery.build('storage', 'v1')
-
-
-
-#example code: https://cloud.google.com/speech/docs/streaming-recognize#speech-streaming-recognize-python
-def transcribe_streaming(stream_file):
-    """Streams transcription of the given audio file."""
-    from google.cloud import speech
-    speech_client = speech.Client()
-
-    with io.open(stream_file, 'rb') as audio_file:
-        audio_sample = speech_client.sample(
-            stream=audio_file,
-            encoding=speech.encoding.Encoding.LINEAR16,
-            sample_rate_hertz=16000)
-        alternatives = audio_sample.streaming_recognize('en-US')
-
-        for alternative in alternatives:
-            print('Finished: {}'.format(alternative.is_final))
-            print('Stability: {}'.format(alternative.stability))
-            print('Transcript: {}'.format(alternative.confidence))
-            print('Transcript: {}'.format(alternative.transcript))
-
-'''
 

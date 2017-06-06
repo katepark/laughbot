@@ -38,7 +38,8 @@ import speech_recognition as sr
 import pyaudio
 import wave
 
-audioFile = "latest_recording.wav"
+audioFile = "laughbot_audio.wav"
+transcriptFile = "laughbot_text.txt"
 
 #http://sharewebegin.blogspot.com/2013/07/record-from-mic-python.html
 def record_audio():
@@ -91,7 +92,10 @@ def get_transcript_from_file():
 	#GOOGLE_CLOUD_SPEECH_CREDENTIALS = #If default credentials not working from the environment variable, insert credentials here and add to r.recognize_google_cloud call
 	try:
 		line = r.recognize_google_cloud(audio)
-		print("Google Cloud Speech thinks you said " + line)
+		file = open(transcriptFile, 'w')
+		file.write("0 A:  " + line)
+		file.close()
+
 		return line
 	except sr.UnknownValueError:
 		print("Google Cloud Speech could not understand audio")

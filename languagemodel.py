@@ -128,7 +128,7 @@ def learnPredictor(trainExamples, trainacoustic):
 
         print "END: TRAINING"
         trainPredict = regr.predict(trainX)
-        print "coefficient of acoustic", regr.coef_[]
+        print "coefficient of acoustic", regr.coef_
         # devPredict = regr.predict(devX)
         precision,recall,fscore,support = precision_recall_fscore_support(trainY, trainPredict, average='binary')
         print "LOGISTIC TRAIN scores:\n\tPrecision:%f\n\tRecall:%f\n\tF1:%f" % (precision, recall, fscore)

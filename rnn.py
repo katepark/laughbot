@@ -20,7 +20,7 @@ from languagemodel import  *
 from rnn_utils import *
 import pdb
 from time import gmtime, strftime
-from adamax import AdamaxOptimizer
+# from adamax import AdamaxOptimizer
 
 class Config:
     """Holds model hyperparams and data information.
@@ -38,7 +38,7 @@ class Config:
     num_classes = 2 #laugh or no laugh
     num_hidden = 100
 
-    num_epochs = 10 #was 50, tune later, look at graph to see if it's enough
+    num_epochs = 50 #was 50, tune later, look at graph to see if it's enough
     # l2_lambda = 0.0000001
     lr = 1e-2
 
@@ -172,27 +172,6 @@ class RNNModel():
 
         self.optimizer = optimizer
 
-    
-    def add_decoder_and_wer_op(self):
-        """Setup the decoder and add the word error rate calculations here. 
-
-        Tip: You will find tf.nn.ctc_beam_search_decoder and tf.edit_distance methods useful here. 
-        Also, report the mean WER over the batch in variable wer
-
-        """        
-        # decoded_sequence = None 
-        # wer = None 
-
-        # decoded_sequence = tf.nn.ctc_beam_search_decoder(self.logits, self.seq_lens_placeholder, merge_repeated=False)[0][0]
-        #wer = tf.edit_distance(tf.cast(decoded_sequence, tf.int32), self.targets_placeholder, normalize=True)
-        #wer = tf.reduce_mean(wer)
-        # tf.summary.scalar("loss", self.loss)
-        #tf.summary.scalar("wer", wer)
-
-        # self.decoded_sequence = decoded_sequence
-        #self.wer = wer
-    
-
     def add_summary_op(self):
         tf.summary.scalar("cost", self.cost)
         tf.summary.scalar("accuracy", self.accuracy)
@@ -324,12 +303,12 @@ if __name__ == "__main__":
                 start = time.time()
 
                 seq = range(num_batches_per_epoch)
-                '''
+                
                 if curr_epoch == Config.num_epochs:
                     seq = range(num_batches_per_epoch)
                 else:
                     seq = random.sample(range(num_batches_per_epoch),num_batches_per_epoch)
-                '''
+                
                 for batch in seq:
                     cur_batch_size = len(train_seqlens_minibatches[batch])
                     batch_cost, summary, acc, predicted, acoustic = model.train_on_batch(session, train_feature_minibatches[batch], train_labels_minibatches[batch], train_seqlens_minibatches[batch], train=True)

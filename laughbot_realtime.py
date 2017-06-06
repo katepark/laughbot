@@ -92,15 +92,18 @@ def get_transcript_from_file():
 	#GOOGLE_CLOUD_SPEECH_CREDENTIALS = #If default credentials not working from the environment variable, insert credentials here and add to r.recognize_google_cloud call
 	try:
 		line = r.recognize_google_cloud(audio)
+		line = line.replace("hahaha", "[Laughter]")
+		line = line.replace("Ha-Ha", "[Laughter]")
+
 		file = open(transcriptFile, 'w')
 		file.write("0 A:  " + line)
 		file.close()
 
 		return line
 	except sr.UnknownValueError:
-		print("Google Cloud Speech could not understand audio")
+		print("Sorry, didn't get that.") #Google Cloud Speech could not understand audio
 	except sr.RequestError as e:
-		print("Could not request results from Google Cloud Speech service; {0}".format(e))
+		print("There seems to be a problem with transcribing your speech. Error with Google Cloud Speech service; {0}".format(e))
 
 
 def get_transcript_from_mic():

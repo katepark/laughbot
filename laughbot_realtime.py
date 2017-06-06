@@ -46,7 +46,7 @@ def record_audio():
 	FORMAT = pyaudio.paInt16 #paInt8 #pyaudio.paFloat32?
 	CHANNELS = 2 #1?
 	RATE = 44100 #sample rate
-	RECORD_SECONDS = 3
+	RECORD_SECONDS = 7
 	WAVE_OUTPUT_FILENAME = "output.wav"
 
 	p = pyaudio.PyAudio()

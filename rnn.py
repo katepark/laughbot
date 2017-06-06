@@ -37,7 +37,7 @@ class Config:
     num_classes = 2 #laugh or no laugh
     num_hidden = 100
 
-    num_epochs = 50 #was 50, tune later, look at graph to see if it's enough
+    num_epochs = 10 #was 50, tune later, look at graph to see if it's enough
     # l2_lambda = 0.0000001
     lr = 1e-2
 
@@ -223,19 +223,37 @@ class RNNModel():
     def __init__(self):
         self.build()
 
-def run_language_model(acoustic_features, val_acoustic):
+def train_language_model(acoustic_features, val_acoustic):
     # print('final train acoustic', acoustic_features[:10])
     # print('final val acoustic', val_acoustic[:10])
     trainExamples = util.readExamples('switchboardsamplesmall.train')
     valExamples = util.readExamples('switchboardsamplesmall.val')
-    testExamples = util.readExamples('switchboardsamplesmall.test')
+    # testExamples = util.readExamples('switchboardsamplesmall.test')
     # comment for test
     compareExamples = valExamples
     # uncomment for test
     # compareExamples = testExamples
-    vocabulary, freq_col_idx, regr = learnPredictor(trainExamples, acoustic_features, compareExamples, val_acoustic)
-    allPosNegBaseline(trainExamples, compareExamples)
+    print('TRAIN MODEL')
+    vocabulary, freq_col_idx, regr = learnPredictor(trainExamples, acoustic_features)
+    print('TRAIN BASELINE')
+    allPosNegBaseline(trainExamples)
+    
+    print('TEST MODEL')
+    testPredictor(compareExamples, val_acoustic)
+    print('TEST BASELINE')
+    allPosNegBaseline(compareExamples)
+
     # realtimePredict(vocabulary, freq_col_idx, regr)
+
+def predict_laughter():
+    predictExamples = util.readExamples('laughbot_text.txt')
+    # place holder, call annie's acoustic extractor!
+    sample_acoustic = np.zeros((len(predictExamples), Config.num_hidden))
+
+    prediction = predictLaughter(predictExamples, sample_acoustic)
+
+
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -393,6 +411,7 @@ if __name__ == "__main__":
             #print('total acoustic features', len(total_acoustic_features), len(total_acoustic_features[0]), total_acoustic_features[:10][:10])
             #print('train predicted', np.array(predicted)[:20])
             #print('total val acoustic', len(total_val_acoustic_features), len(total_val_acoustic_features[0]), total_val_acoustic_features[:10][:10])
-            run_language_model(total_acoustic_features, total_val_acoustic_features)
+            train_language_model(total_acoustic_features, total_val_acoustic_features)
 
+            predict_laughter()
 

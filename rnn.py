@@ -337,16 +337,13 @@ if __name__ == "__main__":
                 train_recall = (true_positives) / (true_positives + false_negatives) if (true_positives + false_negatives > 0) else 0
                 train_f1 = 2 * train_precision * train_recall / (train_precision + train_recall) if (train_precision + train_recall > 0) else 0
 
-                # only 1 batch in val
-                val_batch_cost, _, val_acc, val_predicted, val_acoustic = model.train_on_batch(session, val_feature_minibatches[0], val_labels_minibatches[0], val_seqlens_minibatches[0], train=False)
+                # val_batch_cost, _, val_acc, val_predicted, val_acoustic = model.train_on_batch(session, val_feature_minibatches[0], val_labels_minibatches[0], val_seqlens_minibatches[0], train=False)
+                total_val_cost, _, total_val_acc, val_predicted, val_acoustic = model.train_on_batch(session, val_feature_minibatches[0], val_labels_minibatches[0], val_seqlens_minibatches[0], train=False)
 
-                log = "Epoch {}/{}, train_cost = {:.3f}, train_accuracy = {:.3f}, mini_val_cost = {:.3f}, mini_val_accuracy = {:.3f}, time = {:.3f}"
-                print(log.format(curr_epoch+1, Config.num_epochs, train_cost, train_acc2, val_batch_cost, val_acc, time.time() - start))
-                log_f1 = "TRAIN true_pos = {:d}, true_neg = {:d}, false_pos = {:d}, false_neg = {:d}, precision = {:.3f}, recall = {:.3f}, f1 = {:.3f}"
-                print(log_f1.format(true_positives, true_negatives, false_positives, false_negatives, train_precision, train_recall, train_f1))
 
-                if args.print_every is not None and (curr_epoch + 1) % args.print_every == 0: 
-                    batch_ii = 0
+
+                # if args.print_every is not None and (curr_epoch + 1) % args.print_every == 0: 
+                #    batch_ii = 0
 
                     # model.print_results(train_feature_minibatches[batch_ii], train_labels_minibatches[batch_ii], train_seqlens_minibatches[batch_ii], "Training: " + str(batch_ii) + ': ')
                     # model.print_results(val_feature_minibatches[batch_ii], val_labels_minibatches[batch_ii], val_seqlens_minibatches[batch_ii], "Validation: " + str(batch_ii) + ': ')
@@ -356,33 +353,38 @@ if __name__ == "__main__":
 
                     # RUN on val data set
                     # cur_batch_size = len(val_seqlens_minibatches[0])
-                    total_val_cost, _, total_val_acc, val_predicted, val_acoustic = model.train_on_batch(session, val_feature_minibatches[0], val_labels_minibatches[0], val_seqlens_minibatches[0], train=False)
-                    
-                    total_val_acoustic_features = np.array(val_acoustic)
+                
+                # only 1 batch in val
+                
+                total_val_acoustic_features = np.array(val_acoustic)
 
 
-                    #total_val_cost += val_batch_cost * cur_batch_size
-                    #total_val_acc += val_acc * cur_batch_size
-                    actual = np.array(val_labels_minibatches[0])
-                    val_true_positives = np.count_nonzero(val_predicted * actual)
-                    val_true_negatives = np.count_nonzero((val_predicted - 1) * (actual - 1))
-                    val_false_positives = np.count_nonzero(val_predicted * (actual - 1))
-                    val_false_negatives = np.count_nonzero((val_predicted - 1) * actual)
+                #total_val_cost += val_batch_cost * cur_batch_size
+                #total_val_acc += val_acc * cur_batch_size
+                actual = np.array(val_labels_minibatches[0])
+                val_true_positives = np.count_nonzero(val_predicted * actual)
+                val_true_negatives = np.count_nonzero((val_predicted - 1) * (actual - 1))
+                val_false_positives = np.count_nonzero(val_predicted * (actual - 1))
+                val_false_negatives = np.count_nonzero((val_predicted - 1) * actual)
 
-                    # val_cost = total_val_cost / val_num_examples
-                    # val_acc = total_val_acc / val_num_examples
-                    
-                    # TODO: print these along with tp, tn, fp, fn
+                # val_cost = total_val_cost / val_num_examples
+                # val_acc = total_val_acc / val_num_examples
+                
+                # TODO: print these along with tp, tn, fp, fn
 
-                    val_acc2 = (val_true_positives + val_true_negatives) / (val_true_positives + val_true_negatives + val_false_positives + val_false_negatives)
-                    val_precision = val_true_positives / (val_true_positives + val_false_positives) if (val_true_positives + val_false_positives > 0) else 0
-                    val_recall = val_true_positives / (val_true_positives + val_false_negatives) if (val_true_positives + val_false_negatives > 0) else 0
-                    val_f1 = 2 * val_precision * val_recall / (val_precision + val_recall) if (val_precision + val_recall > 0) else 0
-                    
-                    log = "total_val_cost = {:.3f}, total_val_accuracy = {:.3f}, time = {:.3f}"
-                    print(log.format(total_val_cost, val_acc2, time.time() - start))
-                    log_f1 = "VAL true_pos = {:d}, true_neg = {:d}, false_pos = {:d}, false_neg = {:d}, precision = {:.3f}, recall = {:.3f}, f1 = {:.3f}"
-                    print(log_f1.format(val_true_positives, val_true_negatives, val_false_positives, val_false_negatives, val_precision, val_recall, val_f1))
+                val_acc2 = (val_true_positives + val_true_negatives) / (val_true_positives + val_true_negatives + val_false_positives + val_false_negatives)
+                val_precision = val_true_positives / (val_true_positives + val_false_positives) if (val_true_positives + val_false_positives > 0) else 0
+                val_recall = val_true_positives / (val_true_positives + val_false_negatives) if (val_true_positives + val_false_negatives > 0) else 0
+                val_f1 = 2 * val_precision * val_recall / (val_precision + val_recall) if (val_precision + val_recall > 0) else 0
+                
+                log = "Epoch {}/{}, train_cost = {:.3f}, train_accuracy = {:.3f}, mini_val_cost = {:.3f}, mini_val_accuracy = {:.3f}, time = {:.3f}"
+                print(log.format(curr_epoch+1, Config.num_epochs, train_cost, train_acc2, total_val_cost, val_acc2, time.time() - start))
+
+                log_f1 = "TRAIN true_pos = {:d}, true_neg = {:d}, false_pos = {:d}, false_neg = {:d}, precision = {:.3f}, recall = {:.3f}, f1 = {:.3f}"
+                print(log_f1.format(true_positives, true_negatives, false_positives, false_negatives, train_precision, train_recall, train_f1))
+
+                log_f1 = "VAL true_pos = {:d}, true_neg = {:d}, false_pos = {:d}, false_neg = {:d}, precision = {:.3f}, recall = {:.3f}, f1 = {:.3f}"
+                print(log_f1.format(val_true_positives, val_true_negatives, val_false_positives, val_false_negatives, val_precision, val_recall, val_f1))
 
                 if args.save_every is not None and args.save_to_file is not None and (curr_epoch + 1) % args.save_every == 0:
                 	saver.save(session, args.save_to_file, global_step=curr_epoch + 1)

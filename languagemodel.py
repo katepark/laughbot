@@ -25,8 +25,8 @@ def fitModel(examples, acoustic=None, vocab=None, frequent_ngram_col_idx=None):
         X = vectorizer.fit_transform(corpus)
         
         # UNCOMMENT TO ADD NGRAM FEATURES
-        # analyze = vectorizer.build_analyzer()
-        # fullfeature = X.toarray()
+        analyze = vectorizer.build_analyzer()
+        fullfeature = X.toarray()
         fullfeature = np.zeros((len(examples), 2))
         
         print 'SHAPE', len(fullfeature), len(fullfeature[0])
@@ -44,8 +44,8 @@ def fitModel(examples, acoustic=None, vocab=None, frequent_ngram_col_idx=None):
         '''
         #Add features from grammatical context in transcript
 
-        # fullfeature = contextualFeatures(examples, fullfeature)
-        # print 'CONTEXTUAL SHAPE', len(fullfeature), len(fullfeature[0])
+        fullfeature = contextualFeatures(examples, fullfeature)
+        print 'CONTEXTUAL SHAPE', len(fullfeature), len(fullfeature[0])
 
         fullfeature = acousticFeatures(fullfeature, acoustic)
         print 'ACOUSTIC SHAPE', len(fullfeature), len(fullfeature[0])
@@ -62,7 +62,7 @@ def contextualFeatures(examples, fullfeature):
         Used: (http://sentiwordnet.isti.cnr.it/)
         Also adds acoustic features from RNN Model if given
     '''
-    print 'len of examples', len(examples), 'len full feature', len(fullfeature), 'len acoustic', len(acoustic)
+    # print 'len of examples', len(examples), 'len full feature', len(fullfeature), 'len acoustic', len(acoustic)
     add_features = np.zeros((len(fullfeature), 8)) #5 new features added (pos has 4 elems) last feature 
     sid = SentimentIntensityAnalyzer()
     for line in xrange(len(examples)): 

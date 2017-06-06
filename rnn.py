@@ -9,11 +9,13 @@ import math
 import random
 import os
 # uncomment this line to suppress Tensorflow warnings
-# os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import tensorflow as tf
 import numpy as np
 from six.moves import xrange as range
 import sklearn.metrics as metrics
+from languagemodel import  *
+
 
 from rnn_utils import *
 import pdb
@@ -35,7 +37,7 @@ class Config:
     num_classes = 2 #laugh or no laugh
     num_hidden = 100
 
-    num_epochs = 50 #was 50, tune later, look at graph to see if it's enough
+    num_epochs = 20 #was 50, tune later, look at graph to see if it's enough
     # l2_lambda = 0.0000001
     lr = 1e-2
 
@@ -135,7 +137,6 @@ class RNNModel():
 
         ### END YOUR CODE
         self.last_hidden_state = state # TODO: pass these last hidden states as a feature for determining humor
-        print('last hidden state', state)
         self.logits = logits
 
 
@@ -210,27 +211,31 @@ class RNNModel():
 
         feed = self.create_feed_dict(train_inputs_batch, train_targets_batch, train_seq_len_batch)
 
-        batch_cost, summary, acc, pred = session.run([self.cost, self.merged_summary_op, self.accuracy, self.pred], feed)
+        batch_cost, summary, acc, pred, acoustic = session.run([self.cost, self.merged_summary_op, self.accuracy, self.pred, self.last_hidden_state], feed)
         
         if math.isnan(batch_cost): # basically all examples in this batch have been skipped 
             return 0
         if train:
             _ = session.run([self.optimizer], feed)
 
-        return batch_cost, summary, acc, pred
-
-
-    def print_results(self, train_inputs_batch, train_targets_batch, train_seq_len_batch, header):
-        train_feed = self.create_feed_dict(train_inputs_batch, train_targets_batch, train_seq_len_batch)
-        print(header + str(session.run(self.accuracy, feed_dict=train_feed)))
-        # TODO add precision, recall, F1 score
-
-        # deleted because we have no decoded sequence
-        # train_first_batch_preds = session.run(self.decoded_sequence, feed_dict=train_feed)        
-        # compare_predicted_to_true(train_first_batch_preds, train_targets_batch)
+        return batch_cost, summary, acc, pred, acoustic
 
     def __init__(self):
         self.build()
+
+def run_language_model(acoustic_features, val_acoustic):
+    print('final train acoustic', acoustic_features[:10])
+    print('final val acoustic', val_acoustic[:10])
+    trainExamples = util.readExamples('switchboardsamplesmall.train')
+    valExamples = util.readExamples('switchboardsamplesmall.val')
+    testExamples = util.readExamples('switchboardsamplesmall.test')
+    # comment for test
+    compareExamples = valExamples
+    # uncomment for test
+    # compareExamples = testExamples
+    vocabulary, freq_col_idx, regr = learnPredictor(trainExamples, acoustic_features, compareExamples, val_acoustic)
+    allPosNegBaseline(trainExamples, compareExamples)
+    realtimePredict(vocabulary, freq_col_idx, regr)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -296,11 +301,23 @@ if __name__ == "__main__":
                 false_positives = 0
                 false_negatives = 0
                 true_negatives = 0
+                total_acoustic_features = []
                 start = time.time()
 
-                for batch in random.sample(range(num_batches_per_epoch),num_batches_per_epoch):
+                seq = range(num_batches_per_epoch)
+                '''
+                if curr_epoch == Config.num_epochs:
+                    seq = range(num_batches_per_epoch)
+                else:
+                    seq = random.sample(range(num_batches_per_epoch),num_batches_per_epoch)
+                '''
+                for batch in seq:
                     cur_batch_size = len(train_seqlens_minibatches[batch])
-                    batch_cost, summary, acc, predicted = model.train_on_batch(session, train_feature_minibatches[batch], train_labels_minibatches[batch], train_seqlens_minibatches[batch], train=True)
+                    batch_cost, summary, acc, predicted, acoustic = model.train_on_batch(session, train_feature_minibatches[batch], train_labels_minibatches[batch], train_seqlens_minibatches[batch], train=True)
+                    
+                    for example in np.array(acoustic):
+                        total_acoustic_features.append(np.array(example))
+
                     total_train_cost += batch_cost * cur_batch_size
                     total_train_acc += acc * cur_batch_size
                     actual = np.array(train_labels_minibatches[batch])
@@ -321,7 +338,7 @@ if __name__ == "__main__":
                 train_f1 = 2 * train_precision * train_recall / (train_precision + train_recall) if (train_precision + train_recall > 0) else 0
 
                 # only 1 batch in val
-                val_batch_cost, _, val_acc, val_predicted = model.train_on_batch(session, val_feature_minibatches[0], val_labels_minibatches[0], val_seqlens_minibatches[0], train=False)
+                val_batch_cost, _, val_acc, val_predicted, val_acoustic = model.train_on_batch(session, val_feature_minibatches[0], val_labels_minibatches[0], val_seqlens_minibatches[0], train=False)
 
                 log = "Epoch {}/{}, train_cost = {:.3f}, train_accuracy = {:.3f}, mini_val_cost = {:.3f}, mini_val_accuracy = {:.3f}, time = {:.3f}"
                 print(log.format(curr_epoch+1, Config.num_epochs, train_cost, train_acc2, val_batch_cost, val_acc, time.time() - start))
@@ -330,6 +347,7 @@ if __name__ == "__main__":
 
                 if args.print_every is not None and (curr_epoch + 1) % args.print_every == 0: 
                     batch_ii = 0
+
                     # model.print_results(train_feature_minibatches[batch_ii], train_labels_minibatches[batch_ii], train_seqlens_minibatches[batch_ii], "Training: " + str(batch_ii) + ': ')
                     # model.print_results(val_feature_minibatches[batch_ii], val_labels_minibatches[batch_ii], val_seqlens_minibatches[batch_ii], "Validation: " + str(batch_ii) + ': ')
 
@@ -338,7 +356,11 @@ if __name__ == "__main__":
 
                     # RUN on val data set
                     # cur_batch_size = len(val_seqlens_minibatches[0])
-                    total_val_cost, _, total_val_acc, val_predicted = model.train_on_batch(session, val_feature_minibatches[0], val_labels_minibatches[0], val_seqlens_minibatches[0], train=False)
+                    total_val_cost, _, total_val_acc, val_predicted, val_acoustic = model.train_on_batch(session, val_feature_minibatches[0], val_labels_minibatches[0], val_seqlens_minibatches[0], train=False)
+                    
+                    total_val_acoustic = np.array(val_acoustic)
+
+
                     #total_val_cost += val_batch_cost * cur_batch_size
                     #total_val_acc += val_acc * cur_batch_size
                     actual = np.array(val_labels_minibatches[0])
@@ -364,3 +386,10 @@ if __name__ == "__main__":
 
                 if args.save_every is not None and args.save_to_file is not None and (curr_epoch + 1) % args.save_every == 0:
                 	saver.save(session, args.save_to_file, global_step=curr_epoch + 1)
+
+            print('---Running language model----')
+            print('total acoustic features', len(total_acoustic_features), len(total_acoustic_features[0]), total_acoustic_features[:10][:])
+            print('total val acoustic', len(total_val_acoustic), len(total_val_acoustic[0]), total_val_acoustic[:10][:])
+            # run_language_model(total_acoustic_features, total_val_acoustic_features)
+
+

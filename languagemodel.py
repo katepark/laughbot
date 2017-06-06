@@ -27,7 +27,7 @@ def fitModel(examples, acoustic=None, vocab=None, frequent_ngram_col_idx=None):
         # UNCOMMENT TO ADD NGRAM FEATURES
         analyze = vectorizer.build_analyzer()
         fullfeature = X.toarray()
-        fullfeature = np.zeros((len(examples), 2))
+        # fullfeature = np.zeros((len(examples), 2))
         
         print 'SHAPE', len(fullfeature), len(fullfeature[0])
 
@@ -198,5 +198,5 @@ testExamples = util.readExamples('switchboardsamplesmall.test')
 compareExamples = valExamples
 vocabulary, freq_col_idx, regr = learnPredictor(trainExamples, None, valExamples, None)
 allPosNegBaseline(trainExamples, valExamples)
-realtimePredict(vocabulary, freq_col_idx, regr)
+# realtimePredict(vocabulary, freq_col_idx, regr)
 '''

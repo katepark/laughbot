@@ -37,7 +37,7 @@ class Config:
     num_classes = 2 #laugh or no laugh
     num_hidden = 100
 
-    num_epochs = 20 #was 50, tune later, look at graph to see if it's enough
+    num_epochs = 50 #was 50, tune later, look at graph to see if it's enough
     # l2_lambda = 0.0000001
     lr = 1e-2
 
@@ -377,22 +377,22 @@ if __name__ == "__main__":
                 val_recall = val_true_positives / (val_true_positives + val_false_negatives) if (val_true_positives + val_false_negatives > 0) else 0
                 val_f1 = 2 * val_precision * val_recall / (val_precision + val_recall) if (val_precision + val_recall > 0) else 0
                 
-                log = "Epoch {}/{}, train_cost = {:.3f}, train_accuracy = {:.3f}, mini_val_cost = {:.3f}, mini_val_accuracy = {:.3f}, time = {:.3f}"
+                log = "Epoch {}/{}, train_cost = {:.3f}, train_accuracy = {:.3f}, val_cost = {:.3f}, val_accuracy = {:.3f}, time = {:.3f}"
                 print(log.format(curr_epoch+1, Config.num_epochs, train_cost, train_acc2, total_val_cost, val_acc2, time.time() - start))
 
                 log_f1 = "TRAIN true_pos = {:d}, true_neg = {:d}, false_pos = {:d}, false_neg = {:d}, precision = {:.3f}, recall = {:.3f}, f1 = {:.3f}"
                 print(log_f1.format(true_positives, true_negatives, false_positives, false_negatives, train_precision, train_recall, train_f1))
 
-                log_f1 = "VAL true_pos = {:d}, true_neg = {:d}, false_pos = {:d}, false_neg = {:d}, precision = {:.3f}, recall = {:.3f}, f1 = {:.3f}"
+                log_f1 = "VAL   true_pos = {:d}, true_neg = {:d}, false_pos = {:d}, false_neg = {:d}, precision = {:.3f}, recall = {:.3f}, f1 = {:.3f}"
                 print(log_f1.format(val_true_positives, val_true_negatives, val_false_positives, val_false_negatives, val_precision, val_recall, val_f1))
 
                 if args.save_every is not None and args.save_to_file is not None and (curr_epoch + 1) % args.save_every == 0:
                 	saver.save(session, args.save_to_file, global_step=curr_epoch + 1)
 
             print('---Running language model----')
-            print('total acoustic features', len(total_acoustic_features), len(total_acoustic_features[0]), total_acoustic_features[:10][:10])
-            print('train predicted', np.array(predicted)[:20])
-            print('total val acoustic', len(total_val_acoustic_features), len(total_val_acoustic_features[0]), total_val_acoustic_features[:10][:10])
+            #print('total acoustic features', len(total_acoustic_features), len(total_acoustic_features[0]), total_acoustic_features[:10][:10])
+            #print('train predicted', np.array(predicted)[:20])
+            #print('total val acoustic', len(total_val_acoustic_features), len(total_val_acoustic_features[0]), total_val_acoustic_features[:10][:10])
             run_language_model(total_acoustic_features, total_val_acoustic_features)
 
 

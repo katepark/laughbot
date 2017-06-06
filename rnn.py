@@ -20,6 +20,7 @@ from languagemodel import  *
 from rnn_utils import *
 import pdb
 from time import gmtime, strftime
+from adamax import AdamaxOptimizer
 
 class Config:
     """Holds model hyperparams and data information.
@@ -343,7 +344,7 @@ if __name__ == "__main__":
                     true_negatives += np.count_nonzero((predicted - 1) * (actual - 1))
                     false_positives += np.count_nonzero(predicted * (actual - 1))
                     false_negatives += np.count_nonzero((predicted - 1) * actual)
-
+                    # TODO: change to log correct accuracy after each epoch?
                     train_writer.add_summary(summary, step_ii)
                     step_ii += 1 
 

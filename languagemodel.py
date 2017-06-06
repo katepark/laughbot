@@ -1,4 +1,5 @@
 from sklearn.linear_model import LogisticRegression
+from sklearn import svm
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.metrics import precision_recall_fscore_support
 from nltk import pos_tag
@@ -43,10 +44,13 @@ def fitModel(examples, acoustic=None, vocab=None, frequent_ngram_col_idx=None):
         '''
         #Add features from grammatical context in transcript
 
-        fullfeature = contextualFeatures(examples, fullfeature)
-        fullfeature = acousticFeatures(fullfeature, acoustic)
+        # fullfeature = contextualFeatures(examples, fullfeature)
+        # print 'CONTEXTUAL SHAPE', len(fullfeature), len(fullfeature[0])
 
-        print 'CONTEXTUAL SHAPE', len(fullfeature), len(fullfeature[0])
+        fullfeature = acousticFeatures(fullfeature, acoustic)
+        print 'ACOUSTIC SHAPE', len(fullfeature), len(fullfeature[0])
+
+
         # return vectorizer
         return fullfeature, vectorizer.vocabulary_, frequent_ngram_col_idx
 
@@ -80,7 +84,7 @@ def contextualFeatures(examples, fullfeature):
     return fullfeature
 
 def acousticFeatures(fullfeature, acoustic):
-    fullfeature = np.hstack((fullfeature, add_features))
+    fullfeature = np.hstack((fullfeature, acoustic))
     return fullfeature
 
 
@@ -124,6 +128,7 @@ def learnPredictor(trainExamples, trainacoustic, testExamples, valacoustic):
         
         print "BEGIN: TRAINING"
         regr = LogisticRegression()
+        #regr = svm.LinearSVC()
         regr.fit(trainX, trainY)
         print "END: TRAINING"
         trainPredict = regr.predict(trainX)

@@ -224,8 +224,8 @@ class RNNModel():
         self.build()
 
 def run_language_model(acoustic_features, val_acoustic):
-    print('final train acoustic', acoustic_features[:10])
-    print('final val acoustic', val_acoustic[:10])
+    # print('final train acoustic', acoustic_features[:10])
+    # print('final val acoustic', val_acoustic[:10])
     trainExamples = util.readExamples('switchboardsamplesmall.train')
     valExamples = util.readExamples('switchboardsamplesmall.val')
     testExamples = util.readExamples('switchboardsamplesmall.test')
@@ -235,7 +235,7 @@ def run_language_model(acoustic_features, val_acoustic):
     # compareExamples = testExamples
     vocabulary, freq_col_idx, regr = learnPredictor(trainExamples, acoustic_features, compareExamples, val_acoustic)
     allPosNegBaseline(trainExamples, compareExamples)
-    realtimePredict(vocabulary, freq_col_idx, regr)
+    # realtimePredict(vocabulary, freq_col_idx, regr)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -342,7 +342,7 @@ if __name__ == "__main__":
 
                 log = "Epoch {}/{}, train_cost = {:.3f}, train_accuracy = {:.3f}, mini_val_cost = {:.3f}, mini_val_accuracy = {:.3f}, time = {:.3f}"
                 print(log.format(curr_epoch+1, Config.num_epochs, train_cost, train_acc2, val_batch_cost, val_acc, time.time() - start))
-                log_f1 = "true_pos = {:d}, true_neg = {:d}, false_pos = {:d}, false_neg = {:d}, precision = {:.3f}, recall = {:.3f}, f1 = {:.3f}"
+                log_f1 = "TRAIN true_pos = {:d}, true_neg = {:d}, false_pos = {:d}, false_neg = {:d}, precision = {:.3f}, recall = {:.3f}, f1 = {:.3f}"
                 print(log_f1.format(true_positives, true_negatives, false_positives, false_negatives, train_precision, train_recall, train_f1))
 
                 if args.print_every is not None and (curr_epoch + 1) % args.print_every == 0: 
@@ -358,7 +358,7 @@ if __name__ == "__main__":
                     # cur_batch_size = len(val_seqlens_minibatches[0])
                     total_val_cost, _, total_val_acc, val_predicted, val_acoustic = model.train_on_batch(session, val_feature_minibatches[0], val_labels_minibatches[0], val_seqlens_minibatches[0], train=False)
                     
-                    total_val_acoustic = np.array(val_acoustic)
+                    total_val_acoustic_features = np.array(val_acoustic)
 
 
                     #total_val_cost += val_batch_cost * cur_batch_size
@@ -381,15 +381,16 @@ if __name__ == "__main__":
                     
                     log = "total_val_cost = {:.3f}, total_val_accuracy = {:.3f}, time = {:.3f}"
                     print(log.format(total_val_cost, val_acc2, time.time() - start))
-                    log_f1 = "true_pos = {:d}, true_neg = {:d}, false_pos = {:d}, false_neg = {:d}, precision = {:.3f}, recall = {:.3f}, f1 = {:.3f}"
+                    log_f1 = "VAL true_pos = {:d}, true_neg = {:d}, false_pos = {:d}, false_neg = {:d}, precision = {:.3f}, recall = {:.3f}, f1 = {:.3f}"
                     print(log_f1.format(val_true_positives, val_true_negatives, val_false_positives, val_false_negatives, val_precision, val_recall, val_f1))
 
                 if args.save_every is not None and args.save_to_file is not None and (curr_epoch + 1) % args.save_every == 0:
                 	saver.save(session, args.save_to_file, global_step=curr_epoch + 1)
 
             print('---Running language model----')
-            print('total acoustic features', len(total_acoustic_features), len(total_acoustic_features[0]), total_acoustic_features[:10][:])
-            print('total val acoustic', len(total_val_acoustic), len(total_val_acoustic[0]), total_val_acoustic[:10][:])
-            # run_language_model(total_acoustic_features, total_val_acoustic_features)
+            print('total acoustic features', len(total_acoustic_features), len(total_acoustic_features[0]), total_acoustic_features[:10][:10])
+            print('train predicted', np.array(predicted)[:20])
+            print('total val acoustic', len(total_val_acoustic_features), len(total_val_acoustic_features[0]), total_val_acoustic_features[:10][:10])
+            run_language_model(total_acoustic_features, total_val_acoustic_features)
 
 

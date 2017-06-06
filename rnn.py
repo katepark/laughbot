@@ -18,6 +18,7 @@ import sklearn.metrics as metrics
 from rnn_utils import *
 import pdb
 from time import gmtime, strftime
+from adamax import AdamaxOptimizer
 
 class Config:
     """Holds model hyperparams and data information.
@@ -33,7 +34,7 @@ class Config:
 
     batch_size = 16	
     num_classes = 2 #laugh or no laugh
-    num_hidden = 1 #was 128, we only need the "last one", so try with just 1
+    num_hidden = 50 #was 128, we only need the "last one", so try with just 1
 
     num_epochs = 50 #was 50, tune later, look at graph to see if it's enough
     # l2_lambda = 0.0000001
@@ -308,7 +309,7 @@ if __name__ == "__main__":
                     true_negatives += np.count_nonzero((predicted - 1) * (actual - 1))
                     false_positives += np.count_nonzero(predicted * (actual - 1))
                     false_negatives += np.count_nonzero((predicted - 1) * actual)
-
+                    # TODO: change to log correct accuracy after each epoch?
                     train_writer.add_summary(summary, step_ii)
                     step_ii += 1 
 
@@ -338,19 +339,14 @@ if __name__ == "__main__":
 
                     # RUN on val data set
                     # cur_batch_size = len(val_seqlens_minibatches[0])
-                    total_val_cost, _, total_val_acc, predicted = model.train_on_batch(session, val_feature_minibatches[0], val_labels_minibatches[0], val_seqlens_minibatches[0], train=False)
+                    total_val_cost, _, total_val_acc, val_predicted = model.train_on_batch(session, val_feature_minibatches[0], val_labels_minibatches[0], val_seqlens_minibatches[0], train=False)
                     #total_val_cost += val_batch_cost * cur_batch_size
                     #total_val_acc += val_acc * cur_batch_size
-                    actual = np.array(val_labels_minibatches[0])
-                    val_true_positives = np.count_nonzero(predicted * actual)
-                    val_true_negatives = np.count_nonzero((predicted - 1) * (actual - 1))
-                    val_false_positives = np.count_nonzero(predicted * (actual - 1))
-                    val_false_negatives = np.count_nonzero((predicted - 1) * actual)
-
-                    # val_cost = total_val_cost / val_num_examples
-                    # val_acc = total_val_acc / val_num_examples
-                    
-                    # TODO: print these along with tp, tn, fp, fn
+                    val_actual = np.array(val_labels_minibatches[0])
+                    val_true_positives = np.count_nonzero(val_predicted * val_actual)
+                    val_true_negatives = np.count_nonzero((val_predicted - 1) * (val_actual - 1))
+                    val_false_positives = np.count_nonzero(val_predicted * (val_actual - 1))
+                    val_false_negatives = np.count_nonzero((val_predicted - 1) * val_actual)
 
                     val_acc2 = (val_true_positives + val_true_negatives) / (val_true_positives + val_true_negatives + val_false_positives + val_false_negatives)
                     val_precision = val_true_positives / (val_true_positives + val_false_positives) if (val_true_positives + val_false_positives > 0) else 0

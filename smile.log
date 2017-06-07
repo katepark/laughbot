@@ -1,13 +1,13 @@
-[ 06.06.2017 - 21:49:53 ]
+[ 06.06.2017 - 22:01:24 ]
     (MSG) [2] in SMILExtract : openSMILE starting!
-[ 06.06.2017 - 21:49:53 ]
+[ 06.06.2017 - 22:01:24 ]
     (MSG) [2] in SMILExtract : config file is: MFCC12_E_D_A.conf
-[ 06.06.2017 - 21:49:53 ]
+[ 06.06.2017 - 22:01:24 ]
     (MSG) [2] in cComponentManager : successfully registered 95 component types.
-[ 06.06.2017 - 21:49:53 ]
+[ 06.06.2017 - 22:01:24 ]
     (MSG) [2] in cComponentManager : successfully finished createInstances
                                  (14 component instances were finalised, 1 data memories were finalised)
-[ 06.06.2017 - 21:49:53 ]
+[ 06.06.2017 - 22:01:24 ]
     (MSG) [2] in cComponentManager : starting single thread processing loop
-[ 06.06.2017 - 21:49:53 ]
-    (MSG) [2] in cComponentManager : Processing finished! System ran for 349 ticks.
+[ 06.06.2017 - 22:01:24 ]
+    (MSG) [2] in cComponentManager : Processing finished! System ran for 268 ticks.

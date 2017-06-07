@@ -104,7 +104,7 @@ def get_transcript_from_file():
 		line = line.replace("Ha-Ha", "[Laughter]")
 
 		file = open(transcriptFile, 'w')
-		file.write("0 A:  " + line)
+		file.write("0 " + line)
 		file.close()
 
 		return line

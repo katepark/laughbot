@@ -4,6 +4,7 @@ from __future__ import division
 from __future__ import print_function
 
 import time
+import datetime
 import argparse
 import math
 import random
@@ -20,6 +21,7 @@ from languagemodel import  *
 from rnn_utils import *
 import pdb
 from time import gmtime, strftime
+# from adamax import AdamaxOptimizer
 
 class Config:
     """Holds model hyperparams and data information.
@@ -37,7 +39,7 @@ class Config:
     num_classes = 2 #laugh or no laugh
     num_hidden = 100
 
-    num_epochs = 50 #was 50, tune later, look at graph to see if it's enough
+    num_epochs = 25 #was 50, tune later, look at graph to see if it's enough
     # l2_lambda = 0.0000001
     lr = 1e-2
 
@@ -161,7 +163,7 @@ class RNNModel():
         # reshaped_logits = tf.reshape(self.logits, shape=[logits_shape[0], logits_shape[1]*logits_shape[2]])
 
         self.cost = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(logits=reshaped_logits, labels=self.targets_placeholder))
-        optimizer = tf.train.AdamOptimizer(Config.lr).minimize(self.cost) 
+        optimizer = AdamaxOptimizer(Config.lr).minimize(self.cost) 
         
         # TODO: IS LOGITS[0] LAUGHTER OR LOGITS[1]????
 
@@ -170,27 +172,6 @@ class RNNModel():
         self.accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
 
         self.optimizer = optimizer
-
-    
-    def add_decoder_and_wer_op(self):
-        """Setup the decoder and add the word error rate calculations here. 
-
-        Tip: You will find tf.nn.ctc_beam_search_decoder and tf.edit_distance methods useful here. 
-        Also, report the mean WER over the batch in variable wer
-
-        """        
-        # decoded_sequence = None 
-        # wer = None 
-
-        # decoded_sequence = tf.nn.ctc_beam_search_decoder(self.logits, self.seq_lens_placeholder, merge_repeated=False)[0][0]
-        #wer = tf.edit_distance(tf.cast(decoded_sequence, tf.int32), self.targets_placeholder, normalize=True)
-        #wer = tf.reduce_mean(wer)
-        # tf.summary.scalar("loss", self.loss)
-        #tf.summary.scalar("wer", wer)
-
-        # self.decoded_sequence = decoded_sequence
-        #self.wer = wer
-    
 
     def add_summary_op(self):
         tf.summary.scalar("cost", self.cost)
@@ -223,27 +204,48 @@ class RNNModel():
     def __init__(self):
         self.build()
 
-def run_language_model(acoustic_features, val_acoustic):
+def train_language_model(acoustic_features, val_acoustic):
     # print('final train acoustic', acoustic_features[:10])
     # print('final val acoustic', val_acoustic[:10])
+    trainExamples = util.readExamples('switchboardsampleL.train')
+    valExamples = util.readExamples('switchboardsampleL.val')
+    testExamples = util.readExamples('switchboardsampleL.test')
     trainExamples = util.readExamples('switchboardsamplesmall.train')
     valExamples = util.readExamples('switchboardsamplesmall.val')
-    testExamples = util.readExamples('switchboardsamplesmall.test')
+    # testExamples = util.readExamples('switchboardsamplesmall.test')
     # comment for test
     compareExamples = valExamples
     # uncomment for test
     # compareExamples = testExamples
-    vocabulary, freq_col_idx, regr = learnPredictor(trainExamples, acoustic_features, compareExamples, val_acoustic)
-    allPosNegBaseline(trainExamples, compareExamples)
+    print('TRAIN MODEL')
+    vocabulary, freq_col_idx, regr = learnPredictor(trainExamples, acoustic_features)
+    print('TRAIN BASELINE')
+    allPosNegBaseline(trainExamples)
+    
+    print('TEST MODEL')
+    testPredictor(compareExamples, val_acoustic)
+    print('TEST BASELINE')
+    allPosNegBaseline(compareExamples)
+
     # realtimePredict(vocabulary, freq_col_idx, regr)
+
+def predict_laughter():
+    predictExamples = util.readExamples('laughbot_text.txt')
+    # place holder, call annie's acoustic extractor!
+    sample_acoustic = np.zeros((len(predictExamples), Config.num_hidden))
+
+    prediction = predictLaughter(predictExamples, sample_acoustic)
+
+
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--train_path', nargs='?', default='./switchboardaudiosmall.train.pkl', type=str, help="Give path to training data")
-    parser.add_argument('--val_path', nargs='?', default='./switchboardaudiosmall.val.pkl', type=str, help="Give path to val data")
-    parser.add_argument('--save_every', nargs='?', default=None, type=int, help="Save model every x iterations. Default is not saving at all.")
+    parser.add_argument('--train_path', nargs='?', default='./switchboardaudioL.train.pkl', type=str, help="Give path to training data")
+    parser.add_argument('--val_path', nargs='?', default='./switchboardaudioL.val.pkl', type=str, help="Give path to val data")
+    parser.add_argument('--save_every', nargs='?', default=Config.num_epochs, type=int, help="Save model every x iterations. Default is not saving at all.")
     parser.add_argument('--print_every', nargs='?', default=10, type=int, help="Print some training and val examples (true and predicted sequences) every x iterations. Default is 10")
-    parser.add_argument('--save_to_file', nargs='?', default='saved_models/saved_model_epoch', type=str, help="Provide filename prefix for saving intermediate models")
+    parser.add_argument('--save_to_file', nargs='?', default='saved_models', type=str, help="Provide filename prefix for saving intermediate models")
     parser.add_argument('--load_from_file', nargs='?', default=None, type=str, help="Provide filename to load saved model")
     args = parser.parse_args()
 
@@ -282,11 +284,14 @@ if __name__ == "__main__":
 
         with tf.Session() as session:
             # Initializate the weights and biases
-            session.run(init)
             if args.load_from_file is not None:
+                print("Reading model parameters from",args.load_from_file)
             	new_saver = tf.train.import_meta_graph('%s.meta'%args.load_from_file, clear_devices=True)
                 new_saver.restore(session, args.load_from_file)
-            
+            else:
+                print("Created model with fresh parameters")
+                session.run(init)
+
             train_writer = tf.summary.FileWriter(logs_path + '/train', session.graph)
 
             global_start = time.time()
@@ -305,12 +310,12 @@ if __name__ == "__main__":
                 start = time.time()
 
                 seq = range(num_batches_per_epoch)
-                '''
+                
                 if curr_epoch == Config.num_epochs:
                     seq = range(num_batches_per_epoch)
                 else:
                     seq = random.sample(range(num_batches_per_epoch),num_batches_per_epoch)
-                '''
+                
                 for batch in seq:
                     cur_batch_size = len(train_seqlens_minibatches[batch])
                     batch_cost, summary, acc, predicted, acoustic = model.train_on_batch(session, train_feature_minibatches[batch], train_labels_minibatches[batch], train_seqlens_minibatches[batch], train=True)
@@ -325,7 +330,7 @@ if __name__ == "__main__":
                     true_negatives += np.count_nonzero((predicted - 1) * (actual - 1))
                     false_positives += np.count_nonzero(predicted * (actual - 1))
                     false_negatives += np.count_nonzero((predicted - 1) * actual)
-
+                    # TODO: change to log correct accuracy after each epoch?
                     train_writer.add_summary(summary, step_ii)
                     step_ii += 1 
 
@@ -386,13 +391,18 @@ if __name__ == "__main__":
                 log_f1 = "VAL   true_pos = {:d}, true_neg = {:d}, false_pos = {:d}, false_neg = {:d}, precision = {:.3f}, recall = {:.3f}, f1 = {:.3f}"
                 print(log_f1.format(val_true_positives, val_true_negatives, val_false_positives, val_false_negatives, val_precision, val_recall, val_f1))
 
-                if args.save_every is not None and args.save_to_file is not None and (curr_epoch + 1) % args.save_every == 0:
-                	saver.save(session, args.save_to_file, global_step=curr_epoch + 1)
+            if args.save_to_file is not None:
+                save_path = os.path.join(args.save_to_file, "{:%Y%m%d_%H%M%S}/".format(datetime.datetime.now()))
+                if not os.path.exists(save_path):
+                    os.makedirs(save_path)
+                saver.save(session, save_path + "model")
 
             print('---Running language model----')
             #print('total acoustic features', len(total_acoustic_features), len(total_acoustic_features[0]), total_acoustic_features[:10][:10])
             #print('train predicted', np.array(predicted)[:20])
             #print('total val acoustic', len(total_val_acoustic_features), len(total_val_acoustic_features[0]), total_val_acoustic_features[:10][:10])
-            run_language_model(total_acoustic_features, total_val_acoustic_features)
+            # run_language_model(total_acoustic_features, total_val_acoustic_features)
+            train_language_model(total_acoustic_features, total_val_acoustic_features)
 
+            predict_laughter()
 

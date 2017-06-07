@@ -32,22 +32,28 @@
     pip install pyaudio
 '''
 
+#https://github.com/jeysonmc/python-google-speech-scripts/blob/master/stt_google.py
 
 import numpy as np
 import speech_recognition as sr
 import pyaudio
 import wave
+import threading
+from threading import Thread
 
 audioFile = "laughbot_audio.wav"
 transcriptFile = "laughbot_text.txt"
 
 #http://sharewebegin.blogspot.com/2013/07/record-from-mic-python.html
 def record_audio():
+	exitKey = []
+	Thread(target=end_recording, args=(exitKey,)).start()
+
 	CHUNK = 1024 
-	FORMAT = pyaudio.paInt16 #paInt8 #pyaudio.paFloat32?
-	CHANNELS = 2 #1?
+	FORMAT = pyaudio.paInt16 #paInt8
+	CHANNELS = 2 
 	RATE = 44100 #sample rate
-	RECORD_SECONDS = 7
+	RECORD_SECONDS = 60 #max time for audio input -- press enter to end earlier
 	WAVE_OUTPUT_FILENAME = "output.wav"
 
 	p = pyaudio.PyAudio()
@@ -57,15 +63,17 @@ def record_audio():
 	                rate=RATE,
 	                input=True,
 	                frames_per_buffer=CHUNK) #buffer
-	#should be  output=True, not input?
 
 	print("* recording")
 
 	frames = []
 
 	for i in range(0, int(RATE / CHUNK * RECORD_SECONDS)):
-	    data = stream.read(CHUNK)
-	    frames.append(data) # 2 bytes(16 bits) per channel
+		if exitKey:
+			print "exit!!"
+			break
+		data = stream.read(CHUNK)
+		frames.append(data) # 2 bytes(16 bits) per channel
 
 	print("* done recording")
 
@@ -127,20 +135,26 @@ def get_transcript_from_mic():
 		print("Could not request results from Google Cloud Speech service; {0}".format(e))
 
 
-
+def end_recording(exitKey):
+	raw_input()
+	print "key pressed!"
+	exitKey.append(None)
+	
 
 if __name__ == "__main__":
-	#use multithreading to get keyboard press to stop? much more elegant than ctrl-c..self.
-	x = 1
-	while(x==1): #will be while true
-		#multithread to get transcription AND audio recording for mfcc extraction
-		#speech = get_transcript_from_mic()
+	#use multithreading to get keyboard press to stop? much more elegant than ctrl-c.
+	print
+	print "Hi! I'm Laughbot! Talk to me an press the Enter key when you want me to decide whether you're funny."
+	print "--------------------------------------------------------------------------"
+	#x = 1
+	while True:#(x==1): #endless loop mode! replace with x==1 for a one-time test
+		#speech = get_transcript_from_mic() --> this is for realtime, but doesn't save audio file
 		record_audio()
 		print "audio recorded"
 		transcript = get_transcript_from_file()
 		#process speech with audioFile and transcript
-		print "transcript", transcript
-		x = 0
+		print "transcript: ", transcript
+		#x = 0
 
 
 

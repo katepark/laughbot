@@ -3,33 +3,16 @@
 '''Run this:
 	export GOOGLE_APPLICATION_CREDENTIALS=./service_account_key.json #set environment variable to key path
 	Follow instructions for Google cloud SDK installation: https://cloud.google.com/sdk/downloads 
-	https://cloud.google.com/sdk/docs/quickstarts
-	(to change compute zone: gcloud config set compute/zone NAME)
-	"Created a default .boto configuration file at [/Users/nataliemuenster/.boto]. See this file and
-		[https://cloud.google.com/storage/docs/gsutil/commands/config] for more
-		information about configuring Google Cloud Storage.
-		Your Google Cloud SDK is configured and ready to use!
-		"
+	** when it asks to crease bash profile and leave blank or provide path, use the path it suggests but change .bash_profile to .profile (https://stackoverflow.com/questions/31084458/installed-google-cloud-sdk-but-cant-access-gcloud)
 
-	gcloud auth application-default login (just hit y when it asks and it will redirect you to authenticate)
+	gcloud auth application-default login 
 	gcloud auth activate-service-account --key-file=./service_account_key.json
-
-	Using speech API: (https://cloud.google.com/speech/docs/getting-started)
-	gcloud auth application-default print-access-token:
-	#ex result: ya29.ElpfBCz3lei0FaA_8OJ88fssq5qArUkdQjdqVhSNKGajTk-6J38JSKCiIWeTArj4e9eZhgHhEOcO0SS0qWkm9n21KcOnagEWWEEWy3MaH5r0wHJxqfSEfXK4kC4
-	call in console:
-	"curl -s -k -H "Content-Type: application/json" \
-    -H "Authorization: Bearer access_token" \
-    https://speech.googleapis.com/v1/speech:recognize \
-    -d @sync-request.json"
-
-    #You can also batch long audio files for speech recognition (using Asynchronous Recognition requests) or have the Speech API listen to a stream and return results while the stream is open using a gRPC StreamingRecognize request. For example, a streaming recognition task may provide transcription from a user while they are speaking. --> make it realtime with package? https://github.com/Uberi/speech_recognition/blob/master/examples/background_listening.py
-
-	#https://pypi.python.org/pypi/SpeechRecognition/
+	
     pip install SpeechRecognition
-    Google API Client Library for Python (required only if you need to use the Google Cloud Speech API, recognizer_instance.recognize_google_cloud) pip install google-api-python-client
+    pip install google-api-python-client
     brew install portaudio && sudo brew link portaudio
     pip install pyaudio
+    #https://pypi.python.org/pypi/SpeechRecognition/
 '''
 
 #https://github.com/jeysonmc/python-google-speech-scripts/blob/master/stt_google.py
@@ -40,8 +23,9 @@ import pyaudio
 import wave
 import threading
 from threading import Thread
+import subprocess
 
-audioFile = "laughbot_audio.wav"
+audioFile = "laughbot_audio.wav" #"laughtrack8.wav"
 transcriptFile = "laughbot_text.txt"
 
 #http://sharewebegin.blogspot.com/2013/07/record-from-mic-python.html
@@ -70,7 +54,6 @@ def record_audio():
 
 	for i in range(0, int(RATE / CHUNK * RECORD_SECONDS)):
 		if exitKey:
-			print "exit!!"
 			break
 		data = stream.read(CHUNK)
 		frames.append(data) # 2 bytes(16 bits) per channel
@@ -113,8 +96,8 @@ def get_transcript_from_file():
 	except sr.RequestError as e:
 		print("There seems to be a problem with transcribing your speech. Error with Google Cloud Speech service; {0}".format(e))
 
-
-def get_transcript_from_mic():
+#this is for realtime, but doesn't save audio file
+'''def get_transcript_from_mic():
 	# obtain audio from the microphone
 	r = sr.Recognizer()
 	with sr.Microphone() as source:
@@ -133,7 +116,7 @@ def get_transcript_from_mic():
 		print("Google Cloud Speech could not understand audio")
 	except sr.RequestError as e:
 		print("Could not request results from Google Cloud Speech service; {0}".format(e))
-
+'''
 
 def end_recording(exitKey):
 	raw_input()
@@ -141,20 +124,27 @@ def end_recording(exitKey):
 	exitKey.append(None)
 	
 
+def playLaughtrack():
+	print "in laughtrack"
+	laughFiles = ["laughtrack1.wav", "laughtrack2.wav", "laughtrack3.wav", "laughtrack4.wav", "laughtrack5.wav", "laughtrack6.wav", "laughtrack7.wav"]
+	rand = np.random.randint(0,len(laughFiles))
+	print "laughfile = ", rand, laughFiles[rand]
+	return_code = subprocess.call(["afplay", laughFiles[rand]])
+
+
 if __name__ == "__main__":
 	#use multithreading to get keyboard press to stop? much more elegant than ctrl-c.
 	print
 	print "Hi! I'm Laughbot! Talk to me an press the Enter key when you want me to decide whether you're funny."
 	print "--------------------------------------------------------------------------"
-	#x = 1
-	while True:#(x==1): #endless loop mode! replace with x==1 for a one-time test
-		#speech = get_transcript_from_mic() --> this is for realtime, but doesn't save audio file
+	while True:
 		record_audio()
 		print "audio recorded"
 		transcript = get_transcript_from_file()
 		#process speech with audioFile and transcript
 		print "transcript: ", transcript
-		#x = 0
+		playLaughtrack()
+		
 
 
 

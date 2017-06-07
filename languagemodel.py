@@ -130,8 +130,9 @@ def learnPredictor(trainExamples, trainacoustic):
         trainPredict = regr.predict(trainX)
         print "coefficient of acoustic", regr.coef_
         # devPredict = regr.predict(devX)
+        accuracy = regr.score(trainX, trainY)
         precision,recall,fscore,support = precision_recall_fscore_support(trainY, trainPredict, average='binary')
-        print "LOGISTIC TRAIN scores:\n\tPrecision:%f\n\tRecall:%f\n\tF1:%f" % (precision, recall, fscore)
+        print "LOGISTIC TRAIN scores:\n\tPrecision:%f\n\tRecall:%f\n\tF1:%f\n\tAccuracy:%f" % (precision, recall, fscore,accuracy)
         
         return vocabulary, freq_col_idx, regr
 
@@ -147,8 +148,9 @@ def testPredictor(testExamples, valacoustic):
     loaded_model = pickle.load(open(savedlogmodelfile, 'rb'))
     regr = loaded_model
     testPredict = regr.predict(testX)
+    accuracy = regr.score(testX, testY)
     precision,recall,fscore,support = precision_recall_fscore_support(testY, testPredict, average='binary')
-    print "LOGISTIC TEST scores:\n\tPrecision:%f\n\tRecall:%f\n\tF1:%f" % (precision, recall, fscore)
+    print "LOGISTIC TEST scores:\n\tPrecision:%f\n\tRecall:%f\n\tF1:%f\n\tAccuracy:%f" % (precision, recall, fscore, accuracy)
     
 
 def predictLaughter(testExamples, valacoustic):

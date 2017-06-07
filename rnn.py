@@ -4,6 +4,7 @@ from __future__ import division
 from __future__ import print_function
 
 import time
+import datetime
 import argparse
 import math
 import random
@@ -38,7 +39,7 @@ class Config:
     num_classes = 2 #laugh or no laugh
     num_hidden = 100
 
-    num_epochs = 50 #was 50, tune later, look at graph to see if it's enough
+    num_epochs = 25 #was 50, tune later, look at graph to see if it's enough
     # l2_lambda = 0.0000001
     lr = 1e-2
 
@@ -162,7 +163,7 @@ class RNNModel():
         # reshaped_logits = tf.reshape(self.logits, shape=[logits_shape[0], logits_shape[1]*logits_shape[2]])
 
         self.cost = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(logits=reshaped_logits, labels=self.targets_placeholder))
-        optimizer = tf.train.AdamOptimizer(Config.lr).minimize(self.cost) 
+        optimizer = AdamaxOptimizer(Config.lr).minimize(self.cost) 
         
         # TODO: IS LOGITS[0] LAUGHTER OR LOGITS[1]????
 
@@ -227,9 +228,9 @@ class RNNModel():
 def run_language_model(acoustic_features, val_acoustic):
     # print('final train acoustic', acoustic_features[:10])
     # print('final val acoustic', val_acoustic[:10])
-    trainExamples = util.readExamples('switchboardsamplesmall.train')
-    valExamples = util.readExamples('switchboardsamplesmall.val')
-    testExamples = util.readExamples('switchboardsamplesmall.test')
+    trainExamples = util.readExamples('switchboardsampleL.train')
+    valExamples = util.readExamples('switchboardsampleL.val')
+    testExamples = util.readExamples('switchboardsampleL.test')
     # comment for test
     compareExamples = valExamples
     # uncomment for test
@@ -240,11 +241,11 @@ def run_language_model(acoustic_features, val_acoustic):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--train_path', nargs='?', default='./switchboardaudiosmall.train.pkl', type=str, help="Give path to training data")
-    parser.add_argument('--val_path', nargs='?', default='./switchboardaudiosmall.val.pkl', type=str, help="Give path to val data")
-    parser.add_argument('--save_every', nargs='?', default=None, type=int, help="Save model every x iterations. Default is not saving at all.")
+    parser.add_argument('--train_path', nargs='?', default='./switchboardaudioL.train.pkl', type=str, help="Give path to training data")
+    parser.add_argument('--val_path', nargs='?', default='./switchboardaudioL.val.pkl', type=str, help="Give path to val data")
+    parser.add_argument('--save_every', nargs='?', default=Config.num_epochs, type=int, help="Save model every x iterations. Default is not saving at all.")
     parser.add_argument('--print_every', nargs='?', default=10, type=int, help="Print some training and val examples (true and predicted sequences) every x iterations. Default is 10")
-    parser.add_argument('--save_to_file', nargs='?', default='saved_models/saved_model_epoch', type=str, help="Provide filename prefix for saving intermediate models")
+    parser.add_argument('--save_to_file', nargs='?', default='saved_models', type=str, help="Provide filename prefix for saving intermediate models")
     parser.add_argument('--load_from_file', nargs='?', default=None, type=str, help="Provide filename to load saved model")
     args = parser.parse_args()
 
@@ -283,11 +284,14 @@ if __name__ == "__main__":
 
         with tf.Session() as session:
             # Initializate the weights and biases
-            session.run(init)
             if args.load_from_file is not None:
+                print("Reading model parameters from",args.load_from_file)
             	new_saver = tf.train.import_meta_graph('%s.meta'%args.load_from_file, clear_devices=True)
                 new_saver.restore(session, args.load_from_file)
-            
+            else:
+                print("Created model with fresh parameters")
+                session.run(init)
+
             train_writer = tf.summary.FileWriter(logs_path + '/train', session.graph)
 
             global_start = time.time()
@@ -387,13 +391,16 @@ if __name__ == "__main__":
                 log_f1 = "VAL   true_pos = {:d}, true_neg = {:d}, false_pos = {:d}, false_neg = {:d}, precision = {:.3f}, recall = {:.3f}, f1 = {:.3f}"
                 print(log_f1.format(val_true_positives, val_true_negatives, val_false_positives, val_false_negatives, val_precision, val_recall, val_f1))
 
-                if args.save_every is not None and args.save_to_file is not None and (curr_epoch + 1) % args.save_every == 0:
-                	saver.save(session, args.save_to_file, global_step=curr_epoch + 1)
+            if args.save_to_file is not None:
+                save_path = os.path.join(args.save_to_file, "{:%Y%m%d_%H%M%S}/".format(datetime.datetime.now()))
+                if not os.path.exists(save_path):
+                    os.makedirs(save_path)
+                saver.save(session, save_path + "model")
 
             print('---Running language model----')
             #print('total acoustic features', len(total_acoustic_features), len(total_acoustic_features[0]), total_acoustic_features[:10][:10])
             #print('train predicted', np.array(predicted)[:20])
             #print('total val acoustic', len(total_val_acoustic_features), len(total_val_acoustic_features[0]), total_val_acoustic_features[:10][:10])
-            run_language_model(total_acoustic_features, total_val_acoustic_features)
+            # run_language_model(total_acoustic_features, total_val_acoustic_features)
 
 

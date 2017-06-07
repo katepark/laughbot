@@ -21,7 +21,7 @@ from languagemodel import  *
 from rnn_utils import *
 import pdb
 from time import gmtime, strftime
-from adamax import AdamaxOptimizer
+# from adamax import AdamaxOptimizer
 
 class Config:
     """Holds model hyperparams and data information.
@@ -173,27 +173,6 @@ class RNNModel():
 
         self.optimizer = optimizer
 
-    
-    def add_decoder_and_wer_op(self):
-        """Setup the decoder and add the word error rate calculations here. 
-
-        Tip: You will find tf.nn.ctc_beam_search_decoder and tf.edit_distance methods useful here. 
-        Also, report the mean WER over the batch in variable wer
-
-        """        
-        # decoded_sequence = None 
-        # wer = None 
-
-        # decoded_sequence = tf.nn.ctc_beam_search_decoder(self.logits, self.seq_lens_placeholder, merge_repeated=False)[0][0]
-        #wer = tf.edit_distance(tf.cast(decoded_sequence, tf.int32), self.targets_placeholder, normalize=True)
-        #wer = tf.reduce_mean(wer)
-        # tf.summary.scalar("loss", self.loss)
-        #tf.summary.scalar("wer", wer)
-
-        # self.decoded_sequence = decoded_sequence
-        #self.wer = wer
-    
-
     def add_summary_op(self):
         tf.summary.scalar("cost", self.cost)
         tf.summary.scalar("accuracy", self.accuracy)
@@ -225,19 +204,40 @@ class RNNModel():
     def __init__(self):
         self.build()
 
-def run_language_model(acoustic_features, val_acoustic):
+def train_language_model(acoustic_features, val_acoustic):
     # print('final train acoustic', acoustic_features[:10])
     # print('final val acoustic', val_acoustic[:10])
     trainExamples = util.readExamples('switchboardsampleL.train')
     valExamples = util.readExamples('switchboardsampleL.val')
     testExamples = util.readExamples('switchboardsampleL.test')
+    trainExamples = util.readExamples('switchboardsamplesmall.train')
+    valExamples = util.readExamples('switchboardsamplesmall.val')
+    # testExamples = util.readExamples('switchboardsamplesmall.test')
     # comment for test
     compareExamples = valExamples
     # uncomment for test
     # compareExamples = testExamples
-    vocabulary, freq_col_idx, regr = learnPredictor(trainExamples, acoustic_features, compareExamples, val_acoustic)
-    allPosNegBaseline(trainExamples, compareExamples)
+    print('TRAIN MODEL')
+    vocabulary, freq_col_idx, regr = learnPredictor(trainExamples, acoustic_features)
+    print('TRAIN BASELINE')
+    allPosNegBaseline(trainExamples)
+    
+    print('TEST MODEL')
+    testPredictor(compareExamples, val_acoustic)
+    print('TEST BASELINE')
+    allPosNegBaseline(compareExamples)
+
     # realtimePredict(vocabulary, freq_col_idx, regr)
+
+def predict_laughter():
+    predictExamples = util.readExamples('laughbot_text.txt')
+    # place holder, call annie's acoustic extractor!
+    sample_acoustic = np.zeros((len(predictExamples), Config.num_hidden))
+
+    prediction = predictLaughter(predictExamples, sample_acoustic)
+
+
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -310,12 +310,12 @@ if __name__ == "__main__":
                 start = time.time()
 
                 seq = range(num_batches_per_epoch)
-                '''
+                
                 if curr_epoch == Config.num_epochs:
                     seq = range(num_batches_per_epoch)
                 else:
                     seq = random.sample(range(num_batches_per_epoch),num_batches_per_epoch)
-                '''
+                
                 for batch in seq:
                     cur_batch_size = len(train_seqlens_minibatches[batch])
                     batch_cost, summary, acc, predicted, acoustic = model.train_on_batch(session, train_feature_minibatches[batch], train_labels_minibatches[batch], train_seqlens_minibatches[batch], train=True)
@@ -402,5 +402,7 @@ if __name__ == "__main__":
             #print('train predicted', np.array(predicted)[:20])
             #print('total val acoustic', len(total_val_acoustic_features), len(total_val_acoustic_features[0]), total_val_acoustic_features[:10][:10])
             # run_language_model(total_acoustic_features, total_val_acoustic_features)
+            train_language_model(total_acoustic_features, total_val_acoustic_features)
 
+            predict_laughter()
 

@@ -11,8 +11,12 @@ import math
 import sys
 import numpy as np
 from sklearn.metrics import classification_report
+import pickle
 
 ngram_threshold = 7
+savedlogmodelfile = 'logistic_model.sav'
+savedvocabularyfile = 'vocabulary.sav'
+savedfreqcolidxfile = 'freqcolidx.sav'
 # 5 .432
 # 6 .424
 
@@ -84,6 +88,7 @@ def contextualFeatures(examples, fullfeature):
     return fullfeature
 
 def acousticFeatures(fullfeature, acoustic):
+    print 'shape of acoustic', len(acoustic), len(acoustic[0])
     fullfeature = np.hstack((fullfeature, acoustic))
     return fullfeature
 
@@ -105,7 +110,7 @@ def extract_pos(punchline): #parts of speech
         return np.array([noun, verb, pron, adj, adv])
 
         
-def learnPredictor(trainExamples, trainacoustic, testExamples, valacoustic):
+def learnPredictor(trainExamples, trainacoustic):
         print 'BEGIN: GENERATE TRAIN'
         trainFeatures, vocabulary, freq_col_idx = fitModel(trainExamples, trainacoustic)
         trainX = trainFeatures
@@ -113,48 +118,58 @@ def learnPredictor(trainExamples, trainacoustic, testExamples, valacoustic):
 
         print 'END: GENERATE TRAIN'
         
-        '''
-        print 'BEGIN: GENERATE DEV'
-        devFeatures, _, freq_col_idx_dev = fitModel(devExamples, vocab=vocabulary, frequent_ngram_col_idx=freq_col_idx)
-        devX = devFeatures
-        devY = [y for x,y in devExamples]
-        print 'END: GENERATE DEV'
-        '''
-        print 'BEGIN: GENERATE TEST'
-        testFeatures, _, freq_col_idx_test = fitModel(testExamples, valacoustic, vocab=vocabulary, frequent_ngram_col_idx=freq_col_idx)
-        testX = testFeatures
-        testY = [y for x,y in testExamples]
-        print 'END: GENERATE TEST'
-        
         print "BEGIN: TRAINING"
         regr = LogisticRegression()
         #regr = svm.LinearSVC()
         regr.fit(trainX, trainY)
+        pickle.dump(regr, open(savedlogmodelfile, 'wb'))
+        pickle.dump(vocabulary, open(savedvocabularyfile, 'wb'))
+        pickle.dump(freq_col_idx, open(savedfreqcolidxfile, 'wb'))
+
         print "END: TRAINING"
         trainPredict = regr.predict(trainX)
         print "coefficient of acoustic", regr.coef_
         # devPredict = regr.predict(devX)
-        testPredict = regr.predict(testX)
         precision,recall,fscore,support = precision_recall_fscore_support(trainY, trainPredict, average='binary')
         print "LOGISTIC TRAIN scores:\n\tPrecision:%f\n\tRecall:%f\n\tF1:%f" % (precision, recall, fscore)
         
-        '''
-        precision,recall,fscore,support = precision_recall_fscore_support(devY, devPredict, average='binary')
-        print "LOGISTIC DEV scores:\n\tPrecision:%f\n\tRecall:%f\n\tF1:%f" % (precision, recall, fscore)
-        '''
-        precision,recall,fscore,support = precision_recall_fscore_support(testY, testPredict, average='binary')
-        print "LOGISTIC TEST scores:\n\tPrecision:%f\n\tRecall:%f\n\tF1:%f" % (precision, recall, fscore)
         return vocabulary, freq_col_idx, regr
 
-def allPosNegBaseline(trainExamples, testExamples):
-    print 'ALL POSITIVE TRAIN scores:'
-    allPos(trainExamples)  
-    print 'ALL POSITIVE TEST scores:'
-    allPos(testExamples)
+
+def testPredictor(testExamples, valacoustic):
+    vocabulary = pickle.load(open(savedvocabularyfile, 'rb'))
+    freq_col_idx = pickle.load(open(savedfreqcolidxfile, 'rb'))
+    print 'BEGIN: GENERATE TEST'
+    testFeatures, _, freq_col_idx_test = fitModel(testExamples, valacoustic, vocab=vocabulary, frequent_ngram_col_idx=freq_col_idx)
+    testX = testFeatures
+    testY = [y for x,y in testExamples]
+    print 'END: GENERATE TEST'
+    loaded_model = pickle.load(open(savedlogmodelfile, 'rb'))
+    regr = loaded_model
+    testPredict = regr.predict(testX)
+    precision,recall,fscore,support = precision_recall_fscore_support(testY, testPredict, average='binary')
+    print "LOGISTIC TEST scores:\n\tPrecision:%f\n\tRecall:%f\n\tF1:%f" % (precision, recall, fscore)
+    
+
+def predictLaughter(testExamples, valacoustic):
+    vocabulary = pickle.load(open(savedvocabularyfile, 'rb'))
+    freq_col_idx = pickle.load(open(savedfreqcolidxfile, 'rb'))
+    
+    testFeatures, _, freq_col_idx_test = fitModel(testExamples, valacoustic, vocab=vocabulary, frequent_ngram_col_idx=freq_col_idx)
+    testX = testFeatures
+    testY = [y for x,y in testExamples]
+    regr = pickle.load(open(savedlogmodelfile, 'rb'))
+    testPredict = regr.predict(testX)
+
+    print 'testPredict: ', testPredict
+    return testPredict
+
+
+def allPosNegBaseline(examples):
+    print 'ALL POSITIVE scores:'
+    allPos(examples)  
     print 'ALL NEGATIVE TRAIN scores:'
-    allNeg(trainExamples)
-    print 'ALL NEGATIVE TEST scores:'
-    allNeg(testExamples)
+    allNeg(examples)
 
 def allPos(examples):
     num_punchlines = 0

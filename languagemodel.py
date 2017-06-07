@@ -209,9 +209,16 @@ def realtimePredict(vocabulary, freq_col_idx, regr):
         x = raw_input('Give me a punchline: ')
 
 '''
-trainExamples = util.readExamples('switchboardsamplesmall.train')
-valExamples = util.readExamples('switchboardsamplesmall.val')
-testExamples = util.readExamples('switchboardsamplesmall.test')
+# To get stats using pre trained model 
+trainExamples = util.readExamples('switchboardsampleL.train')
+# To run language only use sample acoustic, otherwise run from rnn.py to get acoustic features
+sampleacoustic = np.zeros((len(trainExamples),100))
+testPredictor(trainExamples, sampleacoustic)
+allPosNegBaseline(trainExamples)
+
+trainExamples = util.readExamples('switchboardsampleL.train')
+valExamples = util.readExamples('switchboardsampleL.val')
+testExamples = util.readExamples('switchboardsampleL.test')
 compareExamples = valExamples
 vocabulary, freq_col_idx, regr = learnPredictor(trainExamples, None, valExamples, None)
 allPosNegBaseline(trainExamples, valExamples)

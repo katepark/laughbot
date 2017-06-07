@@ -320,7 +320,10 @@ if __name__ == "__main__":
 
                     log_f1 = "TEST   true_pos = {:d}, true_neg = {:d}, false_pos = {:d}, false_neg = {:d}, precision = {:.3f}, recall = {:.3f}, f1 = {:.3f}"
                     print(log_f1.format(true_positives, true_negatives, false_positives, false_negatives, precision, recall, f1))
-
+                    
+                    testExamples = util.readExamples('switchboardsampleL.test')
+                    testPredictor(testExamples, acoustic)
+                    allPosNegBaseline(testExamples)
                 
             else:
                 print("Created model with fresh parameters")

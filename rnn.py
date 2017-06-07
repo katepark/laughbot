@@ -378,7 +378,11 @@ if __name__ == "__main__":
                     
                     for batch in seq:
                         cur_batch_size = len(train_seqlens_minibatches[batch])
-                        batch_cost, summary, acc, predicted, acoustic = model.train_on_batch(session, train_feature_minibatches[batch], train_labels_minibatches[batch], train_seqlens_minibatches[batch], train=False)
+                        
+                        # IF TRYING TO GET NUMBERS
+                        #batch_cost, summary, acc, predicted, acoustic = model.train_on_batch(session, train_feature_minibatches[batch], train_labels_minibatches[batch], train_seqlens_minibatches[batch], train=False)
+
+                        batch_cost, summary, acc, predicted, acoustic = model.train_on_batch(session, train_feature_minibatches[batch], train_labels_minibatches[batch], train_seqlens_minibatches[batch], train=True)
                         
                         for example in np.array(acoustic):
                             total_acoustic_features.append(np.array(example))

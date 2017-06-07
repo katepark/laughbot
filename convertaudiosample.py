@@ -4,7 +4,6 @@ import subprocess
 
 MAX_AUDIO_VECTOR = 50
 
-# TODO: call extract.sh here
 subprocess.call("./extract.sh", shell=True)
 
 outFile = open('laughbot_audio.test.pkl', 'wb')

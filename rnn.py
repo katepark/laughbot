@@ -21,7 +21,7 @@ from languagemodel import  *
 from rnn_utils import *
 import pdb
 from time import gmtime, strftime
-# from adamax import AdamaxOptimizer
+from adamax import AdamaxOptimizer
 
 class Config:
     """Holds model hyperparams and data information.
@@ -37,7 +37,7 @@ class Config:
 
     batch_size = 16	
     num_classes = 2 #laugh or no laugh
-    num_hidden = 100
+    num_hidden = 50
 
     num_epochs = 25 #was 50, tune later, look at graph to see if it's enough
     # l2_lambda = 0.0000001
@@ -210,9 +210,6 @@ def train_language_model(acoustic_features, val_acoustic):
     trainExamples = util.readExamples('switchboardsampleL.train')
     valExamples = util.readExamples('switchboardsampleL.val')
     testExamples = util.readExamples('switchboardsampleL.test')
-    trainExamples = util.readExamples('switchboardsamplesmall.train')
-    valExamples = util.readExamples('switchboardsamplesmall.val')
-    # testExamples = util.readExamples('switchboardsamplesmall.test')
     # comment for test
     compareExamples = valExamples
     # uncomment for test
@@ -402,7 +399,7 @@ if __name__ == "__main__":
             #print('train predicted', np.array(predicted)[:20])
             #print('total val acoustic', len(total_val_acoustic_features), len(total_val_acoustic_features[0]), total_val_acoustic_features[:10][:10])
             # run_language_model(total_acoustic_features, total_val_acoustic_features)
-            train_language_model(total_acoustic_features, total_val_acoustic_features)
+            # train_language_model(total_acoustic_features, total_val_acoustic_features)
 
-            predict_laughter()
+            # predict_laughter()
 

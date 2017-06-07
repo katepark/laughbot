@@ -38,7 +38,7 @@ class Config:
 
     batch_size = 16	
     num_classes = 2 #laugh or no laugh
-    num_hidden = 50
+    num_hidden = 100
 
     num_epochs = 25 #was 50, tune later, look at graph to see if it's enough
     # l2_lambda = 0.0000001

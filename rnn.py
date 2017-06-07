@@ -38,7 +38,7 @@ class Config:
 
     batch_size = 16	
     num_classes = 2 #laugh or no laugh
-    num_hidden = 100
+    num_hidden = 50
 
     num_epochs = 25 #was 50, tune later, look at graph to see if it's enough
     # l2_lambda = 0.0000001
@@ -211,9 +211,6 @@ def train_language_model(acoustic_features, val_acoustic):
     trainExamples = util.readExamples('switchboardsampleL.train')
     valExamples = util.readExamples('switchboardsampleL.val')
     testExamples = util.readExamples('switchboardsampleL.test')
-    # trainExamples = util.readExamples('switchboardsamplesmall.train')
-    # valExamples = util.readExamples('switchboardsamplesmall.val')
-    # testExamples = util.readExamples('switchboardsamplesmall.test')
     # comment for test
     compareExamples = valExamples
     # uncomment for test
@@ -429,6 +426,7 @@ if __name__ == "__main__":
 
                     log_f1 = "VAL   true_pos = {:d}, true_neg = {:d}, false_pos = {:d}, false_neg = {:d}, precision = {:.3f}, recall = {:.3f}, f1 = {:.3f}"
                     print(log_f1.format(val_true_positives, val_true_negatives, val_false_positives, val_false_negatives, val_precision, val_recall, val_f1))
+
 
                 if args.save_to_file is not None:
                     save_path = os.path.join(args.save_to_file, "{:%Y%m%d_%H%M%S}/".format(datetime.datetime.now()))

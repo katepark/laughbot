@@ -36,7 +36,7 @@ def fitModel(examples, acoustic=None, vocab=None, frequent_ngram_col_idx=None):
         print 'SHAPE', len(fullfeature), len(fullfeature[0])
 
         # The most time expensive part (pruning so only frequent ngrams used)
-        '''
+        
         if not frequent_ngram_col_idx:
             frequent_ngram_col_idx = []
             for i in range(fullfeature.shape[1]):
@@ -45,7 +45,7 @@ def fitModel(examples, acoustic=None, vocab=None, frequent_ngram_col_idx=None):
 
         fullfeature = fullfeature[:, frequent_ngram_col_idx]
         print 'NEW SHAPE', len(fullfeature), len(fullfeature[0])
-        '''
+        
         #Add features from grammatical context in transcript
 
         fullfeature = contextualFeatures(examples, fullfeature)
@@ -130,8 +130,9 @@ def learnPredictor(trainExamples, trainacoustic):
         trainPredict = regr.predict(trainX)
         print "coefficient of acoustic", regr.coef_
         # devPredict = regr.predict(devX)
+        accuracy = regr.score(trainX, trainY)
         precision,recall,fscore,support = precision_recall_fscore_support(trainY, trainPredict, average='binary')
-        print "LOGISTIC TRAIN scores:\n\tPrecision:%f\n\tRecall:%f\n\tF1:%f" % (precision, recall, fscore)
+        print "LOGISTIC TRAIN scores:\n\tPrecision:%f\n\tRecall:%f\n\tF1:%f\n\tAccuracy:%f" % (precision, recall, fscore,accuracy)
         
         return vocabulary, freq_col_idx, regr
 
@@ -147,8 +148,9 @@ def testPredictor(testExamples, valacoustic):
     loaded_model = pickle.load(open(savedlogmodelfile, 'rb'))
     regr = loaded_model
     testPredict = regr.predict(testX)
+    accuracy = regr.score(testX, testY)
     precision,recall,fscore,support = precision_recall_fscore_support(testY, testPredict, average='binary')
-    print "LOGISTIC TEST scores:\n\tPrecision:%f\n\tRecall:%f\n\tF1:%f" % (precision, recall, fscore)
+    print "LOGISTIC TEST scores:\n\tPrecision:%f\n\tRecall:%f\n\tF1:%f\n\tAccuracy:%f" % (precision, recall, fscore, accuracy)
     
 
 def predictLaughter(testExamples, valacoustic):
@@ -206,10 +208,22 @@ def realtimePredict(vocabulary, freq_col_idx, regr):
         print 'Your punchline was funny: ', predict[0]
         x = raw_input('Give me a punchline: ')
 
+
+
+
 '''
-trainExamples = util.readExamples('switchboardsamplesmall.train')
-valExamples = util.readExamples('switchboardsamplesmall.val')
-testExamples = util.readExamples('switchboardsamplesmall.test')
+    # To run language only model
+trainExamples = util.readExamples('switchboardsampleL.train')
+sampleacoustic = np.zeros((len(trainExamples),100)) # no acoustic features
+testPredictor(trainExamples, sampleacoustic)  # test Predictor reads from saved model
+allPosNegBaseline(trainExamples)
+'''
+
+'''
+# NO ACOUSTIC, ORIGINAL PROGRAM
+trainExamples = util.readExamples('switchboardsampleL.train')
+valExamples = util.readExamples('switchboardsampleL.val')
+testExamples = util.readExamples('switchboardsampleL.test')
 compareExamples = valExamples
 vocabulary, freq_col_idx, regr = learnPredictor(trainExamples, None, valExamples, None)
 allPosNegBaseline(trainExamples, valExamples)

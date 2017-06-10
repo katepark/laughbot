@@ -324,6 +324,12 @@ if __name__ == "__main__":
                 
             else:
                 print("Created model with fresh parameters")
+                
+                # IF TRYING TO GET PREVIOUS NUMBERS OF TRAIN AND VAL
+                # print("Reading model parameters from",args.load_from_file)
+                #new_saver = tf.train.import_meta_graph('saved_models/model.meta', clear_devices=True)
+                #new_saver.restore(session, "saved_models/model")
+                
                 session.run(init)
 
                 train_writer = tf.summary.FileWriter(logs_path + '/train', session.graph)
@@ -347,7 +353,7 @@ if __name__ == "__main__":
                 
                 val_num_examples = np.sum([batch.shape[0] for batch in val_feature_minibatches])
                 val_num_batches_per_epoch = int(math.ceil(val_num_examples / len(val_dataset[0])))
-                model.set_num_examples(num_examples)
+                # model.set_num_examples(num_examples)
 
                 print('TRAIN: ', 'num_ex', num_examples, 'num batches per epoch', num_batches_per_epoch, 'len of seq lens', len(train_seqlens_minibatches), 'len of labels', len(train_labels_minibatches))
                 print('VAL: ', 'num_ex', val_num_examples, 'num batches per epoch', val_num_batches_per_epoch, 'len of seq lens', len(val_seqlens_minibatches), 'len of labels', len(val_labels_minibatches))
@@ -372,6 +378,10 @@ if __name__ == "__main__":
                     
                     for batch in seq:
                         cur_batch_size = len(train_seqlens_minibatches[batch])
+                        
+                        # IF TRYING TO GET NUMBERS
+                        # batch_cost, summary, acc, predicted, acoustic = model.train_on_batch(session, train_feature_minibatches[batch], train_labels_minibatches[batch], train_seqlens_minibatches[batch], train=False)
+
                         batch_cost, summary, acc, predicted, acoustic = model.train_on_batch(session, train_feature_minibatches[batch], train_labels_minibatches[batch], train_seqlens_minibatches[batch], train=True)
                         
                         for example in np.array(acoustic):
@@ -385,7 +395,7 @@ if __name__ == "__main__":
                         false_positives += np.count_nonzero(predicted * (actual - 1))
                         false_negatives += np.count_nonzero((predicted - 1) * actual)
                         # TODO: change to log correct accuracy after each epoch?
-                        train_writer.add_summary(summary, step_ii)
+                        # train_writer.add_summary(summary, step_ii)
                         step_ii += 1 
 
                     train_cost = (total_train_cost) / num_examples
@@ -396,7 +406,6 @@ if __name__ == "__main__":
                     train_recall = (true_positives) / (true_positives + false_negatives) if (true_positives + false_negatives > 0) else 0
                     train_f1 = 2 * train_precision * train_recall / (train_precision + train_recall) if (train_precision + train_recall > 0) else 0
 
-                    # val_batch_cost, _, val_acc, val_predicted, val_acoustic = model.train_on_batch(session, val_feature_minibatches[0], val_labels_minibatches[0], val_seqlens_minibatches[0], train=False)
                     total_val_cost, _, total_val_acc, val_predicted, val_acoustic = model.train_on_batch(session, val_feature_minibatches[0], val_labels_minibatches[0], val_seqlens_minibatches[0], train=False)
                     
                     total_val_acoustic_features = np.array(val_acoustic)

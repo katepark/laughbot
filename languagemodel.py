@@ -208,15 +208,18 @@ def realtimePredict(vocabulary, freq_col_idx, regr):
         print 'Your punchline was funny: ', predict[0]
         x = raw_input('Give me a punchline: ')
 
+
+
+
 '''
-# To get stats using pre trained model, load in the corresponding dataset
+    # To run language only model
 trainExamples = util.readExamples('switchboardsampleL.train')
-# To run language only, use sample acoustic, otherwise run from rnn.py to get acoustic features
-sampleacoustic = np.zeros((len(trainExamples),100))
+sampleacoustic = np.zeros((len(trainExamples),100)) # no acoustic features
 testPredictor(trainExamples, sampleacoustic)  # test Predictor reads from saved model
 allPosNegBaseline(trainExamples)
+'''
 
-
+'''
 # NO ACOUSTIC, ORIGINAL PROGRAM
 trainExamples = util.readExamples('switchboardsampleL.train')
 valExamples = util.readExamples('switchboardsampleL.val')

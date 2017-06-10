@@ -380,7 +380,7 @@ if __name__ == "__main__":
                         cur_batch_size = len(train_seqlens_minibatches[batch])
                         
                         # IF TRYING TO GET NUMBERS
-                        #batch_cost, summary, acc, predicted, acoustic = model.train_on_batch(session, train_feature_minibatches[batch], train_labels_minibatches[batch], train_seqlens_minibatches[batch], train=False)
+                        # batch_cost, summary, acc, predicted, acoustic = model.train_on_batch(session, train_feature_minibatches[batch], train_labels_minibatches[batch], train_seqlens_minibatches[batch], train=False)
 
                         batch_cost, summary, acc, predicted, acoustic = model.train_on_batch(session, train_feature_minibatches[batch], train_labels_minibatches[batch], train_seqlens_minibatches[batch], train=True)
                         
@@ -406,8 +406,7 @@ if __name__ == "__main__":
                     train_recall = (true_positives) / (true_positives + false_negatives) if (true_positives + false_negatives > 0) else 0
                     train_f1 = 2 * train_precision * train_recall / (train_precision + train_recall) if (train_precision + train_recall > 0) else 0
 
-                    # val_batch_cost, _, val_acc, val_predicted, val_acoustic = model.train_on_batch(session, val_feature_minibatches[0], val_labels_minibatches[0], val_seqlens_minibatches[0], train=False)
-                    total_val_cost, _, total_val_acc, val_predicted, val_acoustic = model.train_on_batch(session, val_feature_minibatches[0], val_labels_minibatches[0], val_seqlens_minibatches[0], train=True)
+                    total_val_cost, _, total_val_acc, val_predicted, val_acoustic = model.train_on_batch(session, val_feature_minibatches[0], val_labels_minibatches[0], val_seqlens_minibatches[0], train=False)
                     
                     total_val_acoustic_features = np.array(val_acoustic)
 

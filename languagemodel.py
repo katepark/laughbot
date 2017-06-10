@@ -36,7 +36,7 @@ def fitModel(examples, acoustic=None, vocab=None, frequent_ngram_col_idx=None):
         print 'SHAPE', len(fullfeature), len(fullfeature[0])
 
         # The most time expensive part (pruning so only frequent ngrams used)
-        '''
+        
         if not frequent_ngram_col_idx:
             frequent_ngram_col_idx = []
             for i in range(fullfeature.shape[1]):
@@ -45,7 +45,7 @@ def fitModel(examples, acoustic=None, vocab=None, frequent_ngram_col_idx=None):
 
         fullfeature = fullfeature[:, frequent_ngram_col_idx]
         print 'NEW SHAPE', len(fullfeature), len(fullfeature[0])
-        '''
+        
         #Add features from grammatical context in transcript
 
         fullfeature = contextualFeatures(examples, fullfeature)
@@ -209,13 +209,15 @@ def realtimePredict(vocabulary, freq_col_idx, regr):
         x = raw_input('Give me a punchline: ')
 
 '''
-# To get stats using pre trained model 
+# To get stats using pre trained model, load in the corresponding dataset
 trainExamples = util.readExamples('switchboardsampleL.train')
-# To run language only use sample acoustic, otherwise run from rnn.py to get acoustic features
+# To run language only, use sample acoustic, otherwise run from rnn.py to get acoustic features
 sampleacoustic = np.zeros((len(trainExamples),100))
-testPredictor(trainExamples, sampleacoustic)
+testPredictor(trainExamples, sampleacoustic)  # test Predictor reads from saved model
 allPosNegBaseline(trainExamples)
 
+
+# NO ACOUSTIC, ORIGINAL PROGRAM
 trainExamples = util.readExamples('switchboardsampleL.train')
 valExamples = util.readExamples('switchboardsampleL.val')
 testExamples = util.readExamples('switchboardsampleL.test')

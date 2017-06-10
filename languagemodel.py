@@ -13,7 +13,7 @@ import numpy as np
 from sklearn.metrics import classification_report
 import pickle
 
-ngram_threshold = 7
+ngram_threshold = 2
 savedlogmodelfile = 'logistic_model.sav'
 savedvocabularyfile = 'vocabulary.sav'
 savedfreqcolidxfile = 'freqcolidx.sav'
@@ -36,7 +36,7 @@ def fitModel(examples, acoustic=None, vocab=None, frequent_ngram_col_idx=None):
         print 'SHAPE', len(fullfeature), len(fullfeature[0])
 
         # The most time expensive part (pruning so only frequent ngrams used)
-        
+        '''
         if not frequent_ngram_col_idx:
             frequent_ngram_col_idx = []
             for i in range(fullfeature.shape[1]):
@@ -45,7 +45,7 @@ def fitModel(examples, acoustic=None, vocab=None, frequent_ngram_col_idx=None):
 
         fullfeature = fullfeature[:, frequent_ngram_col_idx]
         print 'NEW SHAPE', len(fullfeature), len(fullfeature[0])
-        
+        '''
         #Add features from grammatical context in transcript
 
         fullfeature = contextualFeatures(examples, fullfeature)
@@ -211,13 +211,21 @@ def realtimePredict(vocabulary, freq_col_idx, regr):
 
 
 
-'''
     # To run language only model
-trainExamples = util.readExamples('switchboardsampleL.train')
-sampleacoustic = np.zeros((len(trainExamples),100)) # no acoustic features
-testPredictor(trainExamples, sampleacoustic)  # test Predictor reads from saved model
+trainExamples = util.readExamples('switchboardL.train')
+valExamples = util.readExamples('switchboardL.val')
+testExamples = util.readExamples('switchboardL.test')
+sampleacousticTrain = np.zeros((len(trainExamples),100)) # no acoustic features
+sampleacousticVal = np.zeros((len(valExamples),100)) # no acoustic features
+sampleacousticTest = np.zeros((len(testExamples),100)) # no acoustic features
+
 allPosNegBaseline(trainExamples)
-'''
+learnPredictor(trainExamples, sampleacousticTrain)
+allPosNegBaseline(valExamples)
+testPredictor(valExamples, sampleacousticVal)  
+allPosNegBaseline(testExamples)
+testPredictor(testExamples, sampleacousticTest)  
+
 
 '''
 # NO ACOUSTIC, ORIGINAL PROGRAM

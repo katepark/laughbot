@@ -235,8 +235,8 @@ def predict_laughter(acoustic):
     prediction = predictLaughter(predictExamples, acoustic)
     return prediction
 
-
-
+def load_and_laugh():
+    return None
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -326,11 +326,11 @@ if __name__ == "__main__":
                 print("Created model with fresh parameters")
                 
                 # IF TRYING TO GET PREVIOUS NUMBERS OF TRAIN AND VAL
-                # print("Reading model parameters from",args.load_from_file)
-                #new_saver = tf.train.import_meta_graph('saved_models/model.meta', clear_devices=True)
-                #new_saver.restore(session, "saved_models/model")
+                print("Reading model parameters from",args.load_from_file)
+                new_saver = tf.train.import_meta_graph('saved_models/model.meta', clear_devices=True)
+                new_saver.restore(session, "saved_models/model")
                 
-                session.run(init)
+                # session.run(init)
 
                 train_writer = tf.summary.FileWriter(logs_path + '/train', session.graph)
 
@@ -358,7 +358,8 @@ if __name__ == "__main__":
                 print('TRAIN: ', 'num_ex', num_examples, 'num batches per epoch', num_batches_per_epoch, 'len of seq lens', len(train_seqlens_minibatches), 'len of labels', len(train_labels_minibatches))
                 print('VAL: ', 'num_ex', val_num_examples, 'num batches per epoch', val_num_batches_per_epoch, 'len of seq lens', len(val_seqlens_minibatches), 'len of labels', len(val_labels_minibatches))
 
-                for curr_epoch in range(Config.num_epochs):
+                for curr_epoch in range(1):
+            #    for curr_epoch in range(Config.num_epochs):
                     total_train_cost = 0.0
                     total_train_acc = 0.0
                     # total_train_los = 0.0
@@ -382,7 +383,7 @@ if __name__ == "__main__":
                         # IF TRYING TO GET NUMBERS
                         # batch_cost, summary, acc, predicted, acoustic = model.train_on_batch(session, train_feature_minibatches[batch], train_labels_minibatches[batch], train_seqlens_minibatches[batch], train=False)
 
-                        batch_cost, summary, acc, predicted, acoustic = model.train_on_batch(session, train_feature_minibatches[batch], train_labels_minibatches[batch], train_seqlens_minibatches[batch], train=True)
+                        batch_cost, summary, acc, predicted, acoustic = model.train_on_batch(session, train_feature_minibatches[batch], train_labels_minibatches[batch], train_seqlens_minibatches[batch], train=False)
                         
                         for example in np.array(acoustic):
                             total_acoustic_features.append(np.array(example))

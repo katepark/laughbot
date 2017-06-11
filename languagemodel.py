@@ -36,7 +36,7 @@ def fitModel(examples, acoustic=None, vocab=None, frequent_ngram_col_idx=None):
         print 'SHAPE', len(fullfeature), len(fullfeature[0])
 
         # The most time expensive part (pruning so only frequent ngrams used)
-        '''
+
         if not frequent_ngram_col_idx:
             frequent_ngram_col_idx = []
             for i in range(fullfeature.shape[1]):
@@ -45,7 +45,7 @@ def fitModel(examples, acoustic=None, vocab=None, frequent_ngram_col_idx=None):
 
         fullfeature = fullfeature[:, frequent_ngram_col_idx]
         print 'NEW SHAPE', len(fullfeature), len(fullfeature[0])
-        '''
+
         #Add features from grammatical context in transcript
 
         fullfeature = contextualFeatures(examples, fullfeature)
@@ -212,9 +212,9 @@ def realtimePredict(vocabulary, freq_col_idx, regr):
 
 
     # To run language only model
-trainExamples = util.readExamples('switchboardL.train')
-valExamples = util.readExamples('switchboardL.val')
-testExamples = util.readExamples('switchboardL.test')
+trainExamples = util.readExamples('switchboardsamplehalf.train')
+valExamples = util.readExamples('switchboardsamplehalf.val')
+testExamples = util.readExamples('switchboardsamplehalf.test')
 sampleacousticTrain = np.zeros((len(trainExamples),100)) # no acoustic features
 sampleacousticVal = np.zeros((len(valExamples),100)) # no acoustic features
 sampleacousticTest = np.zeros((len(testExamples),100)) # no acoustic features

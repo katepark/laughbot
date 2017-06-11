@@ -15,8 +15,6 @@
     #https://pypi.python.org/pypi/SpeechRecognition/
 '''
 
-#https://github.com/jeysonmc/python-google-speech-scripts/blob/master/stt_google.py
-
 import numpy as np
 import speech_recognition as sr
 import pyaudio
@@ -133,9 +131,8 @@ def playLaughtrack():
 
 
 if __name__ == "__main__":
-	#use multithreading to get keyboard press to stop? much more elegant than ctrl-c.
 	print
-	print "Hi! I'm Laughbot! Talk to me an press the Enter key when you want me to decide whether you're funny."
+	print "Hi! I'm Laughbot! Talk to me and press the Enter key when you want me to decide whether you're funny."
 	print "--------------------------------------------------------------------------"
 	while True:
 		record_audio()
@@ -144,6 +141,11 @@ if __name__ == "__main__":
 		#process speech with audioFile and transcript
 		print "transcript: ", transcript
 		playLaughtrack()
+
+
+
+
+# Portions of this page are modifications based on work created and shared by Google and used according to terms described in the Creative Commons 3.0 Attribution License.
 		
 
 

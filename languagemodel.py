@@ -41,7 +41,7 @@ def fitModel(examples, acoustic=None, vocab=None, frequent_ngram_col_idx=None):
             sums = np.sum(fullfeature,axis=0)
             # print sums.shape
             frequent_ngram_col_idx = np.nonzero([x > 2 for x in sums])
-        print frequent_ngram_col_idx
+        # print frequent_ngram_col_idx
         fullfeature = fullfeature[:, frequent_ngram_col_idx[0]]
         print 'NEW SHAPE', len(fullfeature), len(fullfeature[0])
         '''
@@ -218,10 +218,13 @@ sampleacousticTrain = np.zeros((len(trainExamples),100)) # no acoustic features
 sampleacousticVal = np.zeros((len(valExamples),100)) # no acoustic features
 sampleacousticTest = np.zeros((len(testExamples),100)) # no acoustic features
 
+print('---TRAIN----')
 allPosNegBaseline(trainExamples)
 learnPredictor(trainExamples, sampleacousticTrain)
+print('----VAL----')
 allPosNegBaseline(valExamples)
 testPredictor(valExamples, sampleacousticVal)  
+print('---TEST---')
 allPosNegBaseline(testExamples)
 testPredictor(testExamples, sampleacousticTest)  
 

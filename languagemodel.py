@@ -36,14 +36,13 @@ def fitModel(examples, acoustic=None, vocab=None, frequent_ngram_col_idx=None):
         print 'SHAPE', len(fullfeature), len(fullfeature[0])
 
         # The most time expensive part (pruning so only frequent ngrams used)
-        '''
+        
         if not frequent_ngram_col_idx:
-            frequent_ngram_col_idx = []
-            for i in range(fullfeature.shape[1]):
-                if sum(fullfeature[:,i]) > ngram_threshold:
-                    frequent_ngram_col_idx.append(i)
-
-        fullfeature = fullfeature[:, frequent_ngram_col_idx]
+            sums = np.sum(fullfeature,axis=0)
+            # print sums.shape
+            frequent_ngram_col_idx = np.nonzero([x > 2 for x in sums])
+        # print frequent_ngram_col_idx
+        fullfeature = fullfeature[:, frequent_ngram_col_idx[0]]
         print 'NEW SHAPE', len(fullfeature), len(fullfeature[0])
         '''
         #Add features from grammatical context in transcript
@@ -53,7 +52,7 @@ def fitModel(examples, acoustic=None, vocab=None, frequent_ngram_col_idx=None):
 
         fullfeature = acousticFeatures(fullfeature, acoustic)
         print 'ACOUSTIC SHAPE', len(fullfeature), len(fullfeature[0])
-
+        '''
 
         # return vectorizer
         return fullfeature, vectorizer.vocabulary_, frequent_ngram_col_idx
@@ -140,17 +139,17 @@ def learnPredictor(trainExamples, trainacoustic):
 def testPredictor(testExamples, valacoustic):
     vocabulary = pickle.load(open(savedvocabularyfile, 'rb'))
     freq_col_idx = pickle.load(open(savedfreqcolidxfile, 'rb'))
-    print 'BEGIN: GENERATE TEST'
+    print 'BEGIN: GENERATE DATA'
     testFeatures, _, freq_col_idx_test = fitModel(testExamples, valacoustic, vocab=vocabulary, frequent_ngram_col_idx=freq_col_idx)
     testX = testFeatures
     testY = [y for x,y in testExamples]
-    print 'END: GENERATE TEST'
+    print 'END: GENERATE DATA'
     loaded_model = pickle.load(open(savedlogmodelfile, 'rb'))
     regr = loaded_model
     testPredict = regr.predict(testX)
     accuracy = regr.score(testX, testY)
     precision,recall,fscore,support = precision_recall_fscore_support(testY, testPredict, average='binary')
-    print "LOGISTIC TEST scores:\n\tPrecision:%f\n\tRecall:%f\n\tF1:%f\n\tAccuracy:%f" % (precision, recall, fscore, accuracy)
+    print "LOGISTIC scores:\n\tPrecision:%f\n\tRecall:%f\n\tF1:%f\n\tAccuracy:%f" % (precision, recall, fscore, accuracy)
     
 
 def predictLaughter(testExamples, valacoustic):
@@ -170,7 +169,7 @@ def predictLaughter(testExamples, valacoustic):
 def allPosNegBaseline(examples):
     print 'ALL POSITIVE scores:'
     allPos(examples)  
-    print 'ALL NEGATIVE TRAIN scores:'
+    print 'ALL NEGATIVE scores:'
     allNeg(examples)
 
 def allPos(examples):
@@ -211,7 +210,7 @@ def realtimePredict(vocabulary, freq_col_idx, regr):
 
 
 
-    # To run language only model
+# To run language only model
 trainExamples = util.readExamples('switchboardL.train')
 valExamples = util.readExamples('switchboardL.val')
 testExamples = util.readExamples('switchboardL.test')
@@ -219,21 +218,14 @@ sampleacousticTrain = np.zeros((len(trainExamples),100)) # no acoustic features
 sampleacousticVal = np.zeros((len(valExamples),100)) # no acoustic features
 sampleacousticTest = np.zeros((len(testExamples),100)) # no acoustic features
 
+print('---TRAIN LANGUAGE ONLY----')
 allPosNegBaseline(trainExamples)
 learnPredictor(trainExamples, sampleacousticTrain)
+print('----VAL LANGUAGE ONLY----')
 allPosNegBaseline(valExamples)
 testPredictor(valExamples, sampleacousticVal)  
+print('---TEST LANGUAGE ONLY---')
 allPosNegBaseline(testExamples)
 testPredictor(testExamples, sampleacousticTest)  
 
 
-'''
-# NO ACOUSTIC, ORIGINAL PROGRAM
-trainExamples = util.readExamples('switchboardsampleL.train')
-valExamples = util.readExamples('switchboardsampleL.val')
-testExamples = util.readExamples('switchboardsampleL.test')
-compareExamples = valExamples
-vocabulary, freq_col_idx, regr = learnPredictor(trainExamples, None, valExamples, None)
-allPosNegBaseline(trainExamples, valExamples)
-# realtimePredict(vocabulary, freq_col_idx, regr)
-'''

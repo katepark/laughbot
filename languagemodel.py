@@ -35,8 +35,6 @@ def fitModel(examples, acoustic=None, vocab=None, frequent_ngram_col_idx=None):
         
         print 'SHAPE', len(fullfeature), len(fullfeature[0])
 
-        # The most time expensive part (pruning so only frequent ngrams used)
-        
         if not frequent_ngram_col_idx:
             sums = np.sum(fullfeature,axis=0)
             # print sums.shape
@@ -44,7 +42,7 @@ def fitModel(examples, acoustic=None, vocab=None, frequent_ngram_col_idx=None):
         # print frequent_ngram_col_idx
         fullfeature = fullfeature[:, frequent_ngram_col_idx[0]]
         print 'NEW SHAPE', len(fullfeature), len(fullfeature[0])
-        '''
+
         #Add features from grammatical context in transcript
 
         fullfeature = contextualFeatures(examples, fullfeature)
@@ -52,7 +50,6 @@ def fitModel(examples, acoustic=None, vocab=None, frequent_ngram_col_idx=None):
 
         fullfeature = acousticFeatures(fullfeature, acoustic)
         print 'ACOUSTIC SHAPE', len(fullfeature), len(fullfeature[0])
-        '''
 
         # return vectorizer
         return fullfeature, vectorizer.vocabulary_, frequent_ngram_col_idx
@@ -209,15 +206,24 @@ def realtimePredict(vocabulary, freq_col_idx, regr):
 
 
 
+<<<<<<< HEAD
 
 # To run language only model
 trainExamples = util.readExamples('switchboardL.train')
 valExamples = util.readExamples('switchboardL.val')
 testExamples = util.readExamples('switchboardL.test')
+=======
+'''
+# To run language only model
+trainExamples = util.readExamples('switchboardsamplefull.train')
+valExamples = util.readExamples('switchboardsamplefull.val')
+testExamples = util.readExamples('switchboardsamplefull.test')
+>>>>>>> ae13bf89459099b63f657458abaed58e4075f71f
 sampleacousticTrain = np.zeros((len(trainExamples),100)) # no acoustic features
 sampleacousticVal = np.zeros((len(valExamples),100)) # no acoustic features
 sampleacousticTest = np.zeros((len(testExamples),100)) # no acoustic features
 
+<<<<<<< HEAD
 print('---TRAIN LANGUAGE ONLY----')
 allPosNegBaseline(trainExamples)
 learnPredictor(trainExamples, sampleacousticTrain)
@@ -225,7 +231,17 @@ print('----VAL LANGUAGE ONLY----')
 allPosNegBaseline(valExamples)
 testPredictor(valExamples, sampleacousticVal)  
 print('---TEST LANGUAGE ONLY---')
+=======
+print('---TRAIN----')
+allPosNegBaseline(trainExamples)
+learnPredictor(trainExamples, sampleacousticTrain)
+print('----VAL----')
+allPosNegBaseline(valExamples)
+testPredictor(valExamples, sampleacousticVal)  
+print('---TEST---')
+>>>>>>> ae13bf89459099b63f657458abaed58e4075f71f
 allPosNegBaseline(testExamples)
-testPredictor(testExamples, sampleacousticTest)  
+testPredictor(testExamples, sampleacousticTest)
+'''
 
 

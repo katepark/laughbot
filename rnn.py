@@ -16,7 +16,7 @@ import numpy as np
 from six.moves import xrange as range
 import sklearn.metrics as metrics
 from languagemodel import  *
-from laughbot_realtime import *
+#from laughbot_realtime import *
 from convertaudiosample import *
 
 from rnn_utils import *
@@ -38,7 +38,7 @@ class Config:
 
     batch_size = 16	
     num_classes = 2 #laugh or no laugh
-    num_hidden = 100
+    num_hidden = 100 #was 128, tune later
 
     num_epochs = 25 #was 50, tune later, look at graph to see if it's enough
     # l2_lambda = 0.0000001
@@ -208,11 +208,11 @@ class RNNModel():
 def train_language_model(acoustic_features, val_acoustic):
     # print('final train acoustic', acoustic_features[:10])
     # print('final val acoustic', val_acoustic[:10])
-    trainExamples = util.readExamples('switchboardsampleL.train')
-    valExamples = util.readExamples('switchboardsampleL.val')
-    testExamples = util.readExamples('switchboardsampleL.test')
+    trainExamples = util.readExamples('switchboardsamplefull.train')
+    valExamples = util.readExamples('switchboardsamplefull.val')
+    testExamples = util.readExamples('switchboardsamplefull.test')
     # comment for test
-    compareExamples = valExamples
+    compareExamples = testExamples
     # uncomment for test
     # compareExamples = testExamples
     print('TRAIN MODEL')
@@ -240,9 +240,9 @@ def load_and_laugh():
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--train_path', nargs='?', default='./switchboardaudioL.train.pkl', type=str, help="Give path to training data")
-    parser.add_argument('--val_path', nargs='?', default='./switchboardaudioL.val.pkl', type=str, help="Give path to val data")
-    parser.add_argument('--test_path', nargs='?', default='./switchboardaudioL.test.pkl', type=str, help="Give path to test data")
+    parser.add_argument('--train_path', nargs='?', default='./switchboardaudiofull.train.pkl', type=str, help="Give path to training data")
+    parser.add_argument('--val_path', nargs='?', default='./switchboardaudiofull.val.pkl', type=str, help="Give path to val data")
+    parser.add_argument('--test_path', nargs='?', default='./switchboardaudiofull.test.pkl', type=str, help="Give path to test data")
     parser.add_argument('--save_every', nargs='?', default=Config.num_epochs, type=int, help="Save model every x iterations. Default is not saving at all.")
     parser.add_argument('--print_every', nargs='?', default=10, type=int, help="Print some training and val examples (true and predicted sequences) every x iterations. Default is 10")
     parser.add_argument('--save_to_file', nargs='?', default='saved_models', type=str, help="Provide filename prefix for saving intermediate models")
@@ -271,7 +271,7 @@ if __name__ == "__main__":
             	new_saver = tf.train.import_meta_graph('%s.meta'%args.load_from_file, clear_devices=True)
                 new_saver.restore(session, args.load_from_file)
                 
-                if args.laugh is not None:
+                if args.laugh is not None: # realtime laughbot
                     response = raw_input("Press 's' to start: ")
                     while response != 'q':#(x==1): #endless loop mode! replace with x==1 for a one-time test
                         print("press enter to stop recording")
@@ -292,14 +292,20 @@ if __name__ == "__main__":
                         response = raw_input("Press 'c' to continue, 'q' to quit: ")
 
                     print('Thanks for talking to me')
-                else:
+                else: # run trained model on test set
                     print('Running saved model on test set')
+                    train_dataset = load_dataset(args.train_path)
                     test_dataset = load_dataset(args.test_path)
                     feature_b, label_b, seqlens_b = make_batches(test_dataset, batch_size=len(test_dataset[0]))
                     feature_b, label_b, seqlens_b = make_batches(test_dataset, batch_size=len(test_dataset[0]))
                     feature_b = pad_all_batches(feature_b)
                     batch_cost, summary, acc, predicted, acoustic = model.train_on_batch(session, feature_b[0], label_b[0], seqlens_b[0], train=False)
                     total_test_acoustic_features = np.array(acoustic)
+
+                    train_feature_minibatches, train_labels_minibatches, train_seqlens_minibatches = make_batches(train_dataset, batch_size=len(train_dataset[0]))
+                    train_feature_minibatches = pad_all_batches(train_feature_minibatches)
+                    _, _, _, _, train_acoustic = model.train_on_batch(session, train_feature_minibatches[0], train_labels_minibatches[0], train_seqlens_minibatches[0], train=False)
+                    total_acoustic_features = np.array(train_acoustic)
 
                     actual = np.array(label_b[0])
                     true_positives = np.count_nonzero(predicted * actual)
@@ -317,8 +323,8 @@ if __name__ == "__main__":
 
                     log_f1 = "TEST   true_pos = {:d}, true_neg = {:d}, false_pos = {:d}, false_neg = {:d}, precision = {:.3f}, recall = {:.3f}, f1 = {:.3f}"
                     print(log_f1.format(true_positives, true_negatives, false_positives, false_negatives, precision, recall, f1))
-                    
-                    testExamples = util.readExamples('switchboardsampleL.test')
+
+                    testExamples = util.readExamples('switchboardsamplefull.test')
                     testPredictor(testExamples, acoustic)
                     allPosNegBaseline(testExamples)
                 
@@ -326,9 +332,9 @@ if __name__ == "__main__":
                 print("Created model with fresh parameters")
                 
                 # IF TRYING TO GET PREVIOUS NUMBERS OF TRAIN AND VAL
-                print("Reading model parameters from",args.load_from_file)
-                new_saver = tf.train.import_meta_graph('saved_models/model.meta', clear_devices=True)
-                new_saver.restore(session, "saved_models/model")
+                # print("Reading model parameters from",args.load_from_file)
+                # new_saver = tf.train.import_meta_graph('saved_models/model.meta', clear_devices=True)
+                # new_saver.restore(session, "saved_models/model")
                 
                 # session.run(init)
 
@@ -358,8 +364,7 @@ if __name__ == "__main__":
                 print('TRAIN: ', 'num_ex', num_examples, 'num batches per epoch', num_batches_per_epoch, 'len of seq lens', len(train_seqlens_minibatches), 'len of labels', len(train_labels_minibatches))
                 print('VAL: ', 'num_ex', val_num_examples, 'num batches per epoch', val_num_batches_per_epoch, 'len of seq lens', len(val_seqlens_minibatches), 'len of labels', len(val_labels_minibatches))
 
-                for curr_epoch in range(1):
-            #    for curr_epoch in range(Config.num_epochs):
+                for curr_epoch in range(Config.num_epochs):
                     total_train_cost = 0.0
                     total_train_acc = 0.0
                     # total_train_los = 0.0

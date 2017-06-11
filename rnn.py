@@ -208,11 +208,11 @@ class RNNModel():
 def train_language_model(acoustic_features, val_acoustic):
     # print('final train acoustic', acoustic_features[:10])
     # print('final val acoustic', val_acoustic[:10])
-    trainExamples = util.readExamples('switchboardsampleL.train')
-    valExamples = util.readExamples('switchboardsampleL.val')
-    testExamples = util.readExamples('switchboardsampleL.test')
+    trainExamples = util.readExamples('switchboardsamplefull.train')
+    valExamples = util.readExamples('switchboardsamplefull.val')
+    testExamples = util.readExamples('switchboardsamplefull.test')
     # comment for test
-    compareExamples = valExamples
+    compareExamples = testExamples
     # uncomment for test
     # compareExamples = testExamples
     print('TRAIN MODEL')
@@ -240,9 +240,9 @@ def predict_laughter(acoustic):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--train_path', nargs='?', default='./switchboardaudioL.train.pkl', type=str, help="Give path to training data")
-    parser.add_argument('--val_path', nargs='?', default='./switchboardaudioL.val.pkl', type=str, help="Give path to val data")
-    parser.add_argument('--test_path', nargs='?', default='./switchboardaudioL.test.pkl', type=str, help="Give path to test data")
+    parser.add_argument('--train_path', nargs='?', default='./switchboardaudiofull.train.pkl', type=str, help="Give path to training data")
+    parser.add_argument('--val_path', nargs='?', default='./switchboardaudiofull.val.pkl', type=str, help="Give path to val data")
+    parser.add_argument('--test_path', nargs='?', default='./switchboardaudiofull.test.pkl', type=str, help="Give path to test data")
     parser.add_argument('--save_every', nargs='?', default=Config.num_epochs, type=int, help="Save model every x iterations. Default is not saving at all.")
     parser.add_argument('--print_every', nargs='?', default=10, type=int, help="Print some training and val examples (true and predicted sequences) every x iterations. Default is 10")
     parser.add_argument('--save_to_file', nargs='?', default='saved_models', type=str, help="Provide filename prefix for saving intermediate models")
@@ -294,12 +294,18 @@ if __name__ == "__main__":
                     print('Thanks for talking to me')
                 else:
                     print('Running saved model on test set')
+                    train_dataset = load_dataset(args.train_path)
                     test_dataset = load_dataset(args.test_path)
                     feature_b, label_b, seqlens_b = make_batches(test_dataset, batch_size=len(test_dataset[0]))
                     feature_b, label_b, seqlens_b = make_batches(test_dataset, batch_size=len(test_dataset[0]))
                     feature_b = pad_all_batches(feature_b)
                     batch_cost, summary, acc, predicted, acoustic = model.train_on_batch(session, feature_b[0], label_b[0], seqlens_b[0], train=False)
                     total_test_acoustic_features = np.array(acoustic)
+
+                    train_feature_minibatches, train_labels_minibatches, train_seqlens_minibatches = make_batches(train_dataset, batch_size=len(train_dataset[0]))
+                    train_feature_minibatches = pad_all_batches(train_feature_minibatches)
+                    _, _, _, _, train_acoustic = model.train_on_batch(session, train_feature_minibatches[0], train_labels_minibatches[0], train_seqlens_minibatches[0], train=False)
+                    total_acoustic_features = np.array(train_acoustic)
 
                     actual = np.array(label_b[0])
                     true_positives = np.count_nonzero(predicted * actual)
@@ -318,9 +324,12 @@ if __name__ == "__main__":
                     log_f1 = "TEST   true_pos = {:d}, true_neg = {:d}, false_pos = {:d}, false_neg = {:d}, precision = {:.3f}, recall = {:.3f}, f1 = {:.3f}"
                     print(log_f1.format(true_positives, true_negatives, false_positives, false_negatives, precision, recall, f1))
                     
-                    testExamples = util.readExamples('switchboardsampleL.test')
-                    testPredictor(testExamples, acoustic)
-                    allPosNegBaseline(testExamples)
+                    # testExamples = util.readExamples('switchboardsamplefull.test')
+                    # testPredictor(testExamples, acoustic)
+                    # allPosNegBaseline(testExamples)
+                    # rerun for val tuning
+                    train_language_model(total_acoustic_features, total_test_acoustic_features)
+
                 
             else:
                 print("Created model with fresh parameters")

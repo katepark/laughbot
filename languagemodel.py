@@ -13,7 +13,7 @@ import numpy as np
 from sklearn.metrics import classification_report
 import pickle
 
-ngram_threshold = 7
+ngram_threshold = 2
 savedlogmodelfile = 'logistic_model.sav'
 savedvocabularyfile = 'vocabulary.sav'
 savedfreqcolidxfile = 'freqcolidx.sav'

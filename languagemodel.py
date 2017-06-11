@@ -36,16 +36,15 @@ def fitModel(examples, acoustic=None, vocab=None, frequent_ngram_col_idx=None):
         print 'SHAPE', len(fullfeature), len(fullfeature[0])
 
         # The most time expensive part (pruning so only frequent ngrams used)
-        
-        if not frequent_ngram_col_idx:
-            frequent_ngram_col_idx = []
-            for i in range(fullfeature.shape[1]):
-                if sum(fullfeature[:,i]) > ngram_threshold:
-                    frequent_ngram_col_idx.append(i)
 
-        fullfeature = fullfeature[:, frequent_ngram_col_idx]
+        if not frequent_ngram_col_idx:
+            sums = np.sum(fullfeature,axis=0)
+            # print sums.shape
+            frequent_ngram_col_idx = np.nonzero([x > 2 for x in sums])
+        # print frequent_ngram_col_idx
+        fullfeature = fullfeature[:, frequent_ngram_col_idx[0]]
         print 'NEW SHAPE', len(fullfeature), len(fullfeature[0])
-        
+
         #Add features from grammatical context in transcript
 
         fullfeature = contextualFeatures(examples, fullfeature)
@@ -53,7 +52,6 @@ def fitModel(examples, acoustic=None, vocab=None, frequent_ngram_col_idx=None):
 
         fullfeature = acousticFeatures(fullfeature, acoustic)
         print 'ACOUSTIC SHAPE', len(fullfeature), len(fullfeature[0])
-
 
         # return vectorizer
         return fullfeature, vectorizer.vocabulary_, frequent_ngram_col_idx
@@ -210,14 +208,26 @@ def realtimePredict(vocabulary, freq_col_idx, regr):
 
 
 
+'''
+# To run language only model
+trainExamples = util.readExamples('switchboardsamplefull.train')
+valExamples = util.readExamples('switchboardsamplefull.val')
+testExamples = util.readExamples('switchboardsamplefull.test')
+sampleacousticTrain = np.zeros((len(trainExamples),100)) # no acoustic features
+sampleacousticVal = np.zeros((len(valExamples),100)) # no acoustic features
+sampleacousticTest = np.zeros((len(testExamples),100)) # no acoustic features
 
-'''
-    # To run language only model
-trainExamples = util.readExamples('switchboardsampleL.train')
-sampleacoustic = np.zeros((len(trainExamples),100)) # no acoustic features
-testPredictor(trainExamples, sampleacoustic)  # test Predictor reads from saved model
+print('---TRAIN----')
 allPosNegBaseline(trainExamples)
+learnPredictor(trainExamples, sampleacousticTrain)
+print('----VAL----')
+allPosNegBaseline(valExamples)
+testPredictor(valExamples, sampleacousticVal)  
+print('---TEST---')
+allPosNegBaseline(testExamples)
+testPredictor(testExamples, sampleacousticTest)
 '''
+
 
 '''
 # NO ACOUSTIC, ORIGINAL PROGRAM

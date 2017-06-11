@@ -38,7 +38,7 @@ class Config:
 
     batch_size = 16	
     num_classes = 2 #laugh or no laugh
-    num_hidden = 100
+    num_hidden = 100 #was 128, tune later
 
     num_epochs = 25 #was 50, tune later, look at graph to see if it's enough
     # l2_lambda = 0.0000001
@@ -235,8 +235,8 @@ def predict_laughter(acoustic):
     prediction = predictLaughter(predictExamples, acoustic)
     return prediction
 
-
-
+def load_and_laugh():
+    return None
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -271,7 +271,7 @@ if __name__ == "__main__":
             	new_saver = tf.train.import_meta_graph('%s.meta'%args.load_from_file, clear_devices=True)
                 new_saver.restore(session, args.load_from_file)
                 
-                if args.laugh is not None:
+                if args.laugh is not None: # realtime laughbot
                     response = raw_input("Press 's' to start: ")
                     while response != 'q':#(x==1): #endless loop mode! replace with x==1 for a one-time test
                         print("press enter to stop recording")
@@ -292,7 +292,7 @@ if __name__ == "__main__":
                         response = raw_input("Press 'c' to continue, 'q' to quit: ")
 
                     print('Thanks for talking to me')
-                else:
+                else: # run trained model on test set
                     print('Running saved model on test set')
                     train_dataset = load_dataset(args.train_path)
                     test_dataset = load_dataset(args.test_path)
@@ -323,23 +323,20 @@ if __name__ == "__main__":
 
                     log_f1 = "TEST   true_pos = {:d}, true_neg = {:d}, false_pos = {:d}, false_neg = {:d}, precision = {:.3f}, recall = {:.3f}, f1 = {:.3f}"
                     print(log_f1.format(true_positives, true_negatives, false_positives, false_negatives, precision, recall, f1))
-                    
-                    # testExamples = util.readExamples('switchboardsamplefull.test')
-                    # testPredictor(testExamples, acoustic)
-                    # allPosNegBaseline(testExamples)
-                    # rerun for val tuning
-                    train_language_model(total_acoustic_features, total_test_acoustic_features)
 
+                    testExamples = util.readExamples('switchboardsamplefull.test')
+                    testPredictor(testExamples, acoustic)
+                    allPosNegBaseline(testExamples)
                 
             else:
                 print("Created model with fresh parameters")
                 
                 # IF TRYING TO GET PREVIOUS NUMBERS OF TRAIN AND VAL
                 # print("Reading model parameters from",args.load_from_file)
-                #new_saver = tf.train.import_meta_graph('saved_models/model.meta', clear_devices=True)
-                #new_saver.restore(session, "saved_models/model")
+                # new_saver = tf.train.import_meta_graph('saved_models/model.meta', clear_devices=True)
+                # new_saver.restore(session, "saved_models/model")
                 
-                session.run(init)
+                # session.run(init)
 
                 train_writer = tf.summary.FileWriter(logs_path + '/train', session.graph)
 
@@ -391,7 +388,7 @@ if __name__ == "__main__":
                         # IF TRYING TO GET NUMBERS
                         # batch_cost, summary, acc, predicted, acoustic = model.train_on_batch(session, train_feature_minibatches[batch], train_labels_minibatches[batch], train_seqlens_minibatches[batch], train=False)
 
-                        batch_cost, summary, acc, predicted, acoustic = model.train_on_batch(session, train_feature_minibatches[batch], train_labels_minibatches[batch], train_seqlens_minibatches[batch], train=True)
+                        batch_cost, summary, acc, predicted, acoustic = model.train_on_batch(session, train_feature_minibatches[batch], train_labels_minibatches[batch], train_seqlens_minibatches[batch], train=False)
                         
                         for example in np.array(acoustic):
                             total_acoustic_features.append(np.array(example))

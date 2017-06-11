@@ -208,11 +208,11 @@ def realtimePredict(vocabulary, freq_col_idx, regr):
 
 
 
-
-    # To run language only model
-trainExamples = util.readExamples('switchboardsamplehalf.train')
-valExamples = util.readExamples('switchboardsamplehalf.val')
-testExamples = util.readExamples('switchboardsamplehalf.test')
+'''
+# To run language only model
+trainExamples = util.readExamples('switchboardsamplefull.train')
+valExamples = util.readExamples('switchboardsamplefull.val')
+testExamples = util.readExamples('switchboardsamplefull.test')
 sampleacousticTrain = np.zeros((len(trainExamples),100)) # no acoustic features
 sampleacousticVal = np.zeros((len(valExamples),100)) # no acoustic features
 sampleacousticTest = np.zeros((len(testExamples),100)) # no acoustic features
@@ -225,7 +225,8 @@ allPosNegBaseline(valExamples)
 testPredictor(valExamples, sampleacousticVal)  
 print('---TEST---')
 allPosNegBaseline(testExamples)
-testPredictor(testExamples, sampleacousticTest)  
+testPredictor(testExamples, sampleacousticTest)
+'''
 
 
 '''

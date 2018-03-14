@@ -16,7 +16,7 @@ import numpy as np
 from six.moves import xrange as range
 import sklearn.metrics as metrics
 from languagemodel import  *
-#from laughbot_realtime import *
+from laughbot_realtime import *
 from convertaudiosample import *
 
 from rnn_utils import *

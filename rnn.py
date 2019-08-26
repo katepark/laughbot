@@ -16,8 +16,6 @@ import numpy as np
 from six.moves import xrange as range
 import sklearn.metrics as metrics
 from languagemodel import  *
-# from laughbot_realtime import *
-from convertaudiosample import *
 
 from rnn_utils import *
 import pdb
@@ -247,94 +245,55 @@ if __name__ == "__main__":
     parser.add_argument('--print_every', nargs='?', default=10, type=int, help="Print some training and val examples (true and predicted sequences) every x iterations. Default is 10")
     parser.add_argument('--save_to_file', nargs='?', default='saved_models', type=str, help="Provide filename prefix for saving intermediate models")
     parser.add_argument('--load_from_file', nargs='?', default=None, type=str, help="Provide filename to load saved model")
-    parser.add_argument('--laugh', nargs='?', default=None, type=str, help="Set to string to call laugh")
     args = parser.parse_args()
 
     logs_path = "tensorboard/" + strftime("%Y_%m_%d_%H_%M_%S", gmtime())
 
-
-    def pad_all_batches(batch_feature_array):
-    	for batch_num in range(len(batch_feature_array)):
-    		batch_feature_array[batch_num] = pad_sequences(batch_feature_array[batch_num])[0]
-    	return batch_feature_array
-
     with tf.Graph().as_default():
         model = RNNModel() 
         init = tf.global_variables_initializer()
-
-        # saver = tf.train.Saver(tf.trainable_variables())
 
         with tf.Session() as session:
             # Initializate the weights and biases
             if args.load_from_file is not None:
                 print("Reading model parameters from",args.load_from_file)
             	new_saver = tf.train.import_meta_graph('%s.meta'%args.load_from_file, clear_devices=True)
-                print('------------------------------------------------------')
-                for var in tf.global_variables():
-                    print('all variables: ' + var.op.name)
-                for var in tf.trainable_variables():
-                    print('normal variable: ' + var.op.name)
-                for var in tf.moving_average_variables():
-                    print('ema variable: ' + var.op.name)
-                print('------------------------------------------------------')
                 new_saver.restore(session, args.load_from_file)
                 
-                if args.laugh is not None: # realtime laughbot
-                    response = raw_input("Press 's' to start: ")
-                    while response != 'q':#(x==1): #endless loop mode! replace with x==1 for a one-time test
-                        print("press enter to stop recording")
-                        record_audio()
-                        print("audio recorded")
-                        transcript = get_transcript_from_file()
-                        print("transcript: ", transcript)
-                        convert_audio_sample()
-                        
-                        test_dataset = load_dataset("laughbot_audio.test.pkl")
-                        feature_b, label_b, seqlens_b = make_batches(test_dataset, batch_size=len(test_dataset[0]))
-                        feature_b = pad_all_batches(feature_b)
-                        batch_cost, summary, acc, predicted, acoustic = model.train_on_batch(session, feature_b[0], label_b[0], seqlens_b[0], train=False)
-                        prediction = predict_laughter(acoustic)
-                        print('Prediction', prediction)
-                        if prediction[0] == 1:
-                            playLaughtrack()
-                        response = raw_input("Press 'c' to continue, 'q' to quit: ")
+                # run trained model on test set
+                print('Running saved model on test set')
+                train_dataset = load_dataset(args.train_path)
+                test_dataset = load_dataset(args.test_path)
+                feature_b, label_b, seqlens_b = make_batches(test_dataset, batch_size=len(test_dataset[0]))
+                feature_b = pad_all_batches(feature_b)
+                batch_cost, summary, acc, predicted, acoustic = model.train_on_batch(session, feature_b[0], label_b[0], seqlens_b[0], train=False)
+                total_test_acoustic_features = np.array(acoustic)
 
-                    print('Thanks for talking to me')
-                else: # run trained model on test set
-                    print('Running saved model on test set')
-                    train_dataset = load_dataset(args.train_path)
-                    test_dataset = load_dataset(args.test_path)
-                    feature_b, label_b, seqlens_b = make_batches(test_dataset, batch_size=len(test_dataset[0]))
-                    feature_b, label_b, seqlens_b = make_batches(test_dataset, batch_size=len(test_dataset[0]))
-                    feature_b = pad_all_batches(feature_b)
-                    batch_cost, summary, acc, predicted, acoustic = model.train_on_batch(session, feature_b[0], label_b[0], seqlens_b[0], train=False)
-                    total_test_acoustic_features = np.array(acoustic)
+                train_feature_minibatches, train_labels_minibatches, train_seqlens_minibatches = make_batches(train_dataset, batch_size=len(train_dataset[0]))
+                train_feature_minibatches = pad_all_batches(train_feature_minibatches)
+                _, _, _, _, train_acoustic = model.train_on_batch(session, train_feature_minibatches[0], train_labels_minibatches[0], train_seqlens_minibatches[0], train=False)
+                total_acoustic_features = np.array(train_acoustic)
 
-                    train_feature_minibatches, train_labels_minibatches, train_seqlens_minibatches = make_batches(train_dataset, batch_size=len(train_dataset[0]))
-                    train_feature_minibatches = pad_all_batches(train_feature_minibatches)
-                    _, _, _, _, train_acoustic = model.train_on_batch(session, train_feature_minibatches[0], train_labels_minibatches[0], train_seqlens_minibatches[0], train=False)
-                    total_acoustic_features = np.array(train_acoustic)
+                actual = np.array(label_b[0])
+                true_positives = np.count_nonzero(predicted * actual)
+                true_negatives = np.count_nonzero((predicted - 1) * (actual - 1))
+                false_positives = np.count_nonzero(predicted * (actual - 1))
+                false_negatives = np.count_nonzero((predicted - 1) * actual)
 
-                    actual = np.array(label_b[0])
-                    true_positives = np.count_nonzero(predicted * actual)
-                    true_negatives = np.count_nonzero((predicted - 1) * (actual - 1))
-                    false_positives = np.count_nonzero(predicted * (actual - 1))
-                    false_negatives = np.count_nonzero((predicted - 1) * actual)
+                acc2 = (true_positives + true_negatives) / (true_positives + true_negatives + false_positives + false_negatives)
+                precision = true_positives / (true_positives + false_positives) if (true_positives + false_positives > 0) else 0
+                recall = true_positives / (true_positives + false_negatives) if (true_positives + false_negatives > 0) else 0
+                f1 = 2 * precision * recall / (precision + recall) if (precision + recall > 0) else 0
+                
+                log = "TEST test_cost = {:.3f}, test_accuracy = {:.3f}"
+                print(log.format(batch_cost, acc2))
 
-                    acc2 = (true_positives + true_negatives) / (true_positives + true_negatives + false_positives + false_negatives)
-                    precision = true_positives / (true_positives + false_positives) if (true_positives + false_positives > 0) else 0
-                    recall = true_positives / (true_positives + false_negatives) if (true_positives + false_negatives > 0) else 0
-                    f1 = 2 * precision * recall / (precision + recall) if (precision + recall > 0) else 0
-                    
-                    log = "TEST test_cost = {:.3f}, test_accuracy = {:.3f}"
-                    print(log.format(batch_cost, acc2))
+                log_f1 = "TEST   true_pos = {:d}, true_neg = {:d}, false_pos = {:d}, false_neg = {:d}, precision = {:.3f}, recall = {:.3f}, f1 = {:.3f}"
+                print(log_f1.format(true_positives, true_negatives, false_positives, false_negatives, precision, recall, f1))
 
-                    log_f1 = "TEST   true_pos = {:d}, true_neg = {:d}, false_pos = {:d}, false_neg = {:d}, precision = {:.3f}, recall = {:.3f}, f1 = {:.3f}"
-                    print(log_f1.format(true_positives, true_negatives, false_positives, false_negatives, precision, recall, f1))
-
-                    testExamples = util.readExamples('switchboardsamplefull.test')
-                    testPredictor(testExamples, acoustic)
-                    allPosNegBaseline(testExamples)
+                testExamples = util.readExamples('switchboardsamplefull.test')
+                testPredictor(testExamples, acoustic)
+                allPosNegBaseline(testExamples)
                 
             else:
                 print("Created model with fresh parameters")
@@ -345,6 +304,7 @@ if __name__ == "__main__":
                 # new_saver.restore(session, "saved_models/model")
                 
                 # session.run(init)
+                saver = tf.train.Saver(tf.trainable_variables())
 
                 train_writer = tf.summary.FileWriter(logs_path + '/train', session.graph)
 

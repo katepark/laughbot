@@ -6,7 +6,6 @@ MAX_AUDIO_VECTOR = 50
 
 
 def convert_audio_sample():
-	# TODO: call extract.sh here
 	subprocess.call("./extract.sh", shell=True)
 
 	outFile = open('laughbot_audio.test.pkl', 'wb')

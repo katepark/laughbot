@@ -16,7 +16,7 @@ import numpy as np
 from six.moves import xrange as range
 import sklearn.metrics as metrics
 from languagemodel import  *
-#from laughbot_realtime import *
+# from laughbot_realtime import *
 from convertaudiosample import *
 
 from rnn_utils import *
@@ -262,13 +262,21 @@ if __name__ == "__main__":
         model = RNNModel() 
         init = tf.global_variables_initializer()
 
-        saver = tf.train.Saver(tf.trainable_variables())
+        # saver = tf.train.Saver(tf.trainable_variables())
 
         with tf.Session() as session:
             # Initializate the weights and biases
             if args.load_from_file is not None:
                 print("Reading model parameters from",args.load_from_file)
             	new_saver = tf.train.import_meta_graph('%s.meta'%args.load_from_file, clear_devices=True)
+                print('------------------------------------------------------')
+                for var in tf.global_variables():
+                    print('all variables: ' + var.op.name)
+                for var in tf.trainable_variables():
+                    print('normal variable: ' + var.op.name)
+                for var in tf.moving_average_variables():
+                    print('ema variable: ' + var.op.name)
+                print('------------------------------------------------------')
                 new_saver.restore(session, args.load_from_file)
                 
                 if args.laugh is not None: # realtime laughbot

@@ -21,37 +21,27 @@ savedfreqcolidxfile = 'freqcolidx.sav'
 # 6 .424
 
 def fitModel(examples, acoustic=None, vocab=None, frequent_ngram_col_idx=None):
-        corpus = []
-        for x,y in examples:
-            corpus.append(x)
-            # print x
+        corpus = [x for x,y in examples]
         vectorizer = CountVectorizer(vocabulary=vocab, ngram_range=(1, 3),token_pattern=r'\b\w+\b', min_df=1)
         X = vectorizer.fit_transform(corpus)
         
         # UNCOMMENT TO ADD NGRAM FEATURES
         analyze = vectorizer.build_analyzer()
         fullfeature = X.toarray()
-        # fullfeature = np.zeros((len(examples), 2))
-        
-        print 'SHAPE', len(fullfeature), len(fullfeature[0])
+        print 'VOCAB SHAPE', len(fullfeature), len(fullfeature[0])
 
         # The most time expensive part (pruning so only frequent ngrams used)
-
         if not frequent_ngram_col_idx:
             sums = np.sum(fullfeature,axis=0)
-            # print sums.shape
             frequent_ngram_col_idx = np.nonzero([x > 2 for x in sums])
-        # print frequent_ngram_col_idx
         fullfeature = fullfeature[:, frequent_ngram_col_idx[0]]
-        print 'NEW SHAPE', len(fullfeature), len(fullfeature[0])
 
-        #Add features from grammatical context in transcript
-
+        # Add features from grammatical context in transcript
         fullfeature = contextualFeatures(examples, fullfeature)
         print 'CONTEXTUAL SHAPE', len(fullfeature), len(fullfeature[0])
 
         fullfeature = acousticFeatures(fullfeature, acoustic)
-        print 'ACOUSTIC SHAPE', len(fullfeature), len(fullfeature[0])
+        print 'FINAL SHAPE', len(fullfeature), len(fullfeature[0])
 
         # return vectorizer
         return fullfeature, vectorizer.vocabulary_, frequent_ngram_col_idx
@@ -86,7 +76,7 @@ def contextualFeatures(examples, fullfeature):
     return fullfeature
 
 def acousticFeatures(fullfeature, acoustic):
-    print 'shape of acoustic', len(acoustic), len(acoustic[0])
+    # print 'shape of acoustic', len(acoustic), len(acoustic[0])
     fullfeature = np.hstack((fullfeature, acoustic))
     return fullfeature
 
@@ -161,7 +151,7 @@ def predictLaughter(testExamples, valacoustic):
     regr = pickle.load(open(savedlogmodelfile, 'rb'))
     testPredict = regr.predict(testX)
 
-    print 'testPredict: ', testPredict
+    # print 'testPredict: ', testPredict
     return testPredict
 
 
@@ -192,7 +182,7 @@ def allNeg(examples):
     fscore = 0.0
     print "\tPrecision:%f\n\tRecall:%f\n\tF1:%f" % (precision, recall, fscore)
 
-def realtimePredict(vocabulary, freq_col_idx, regr):
+def predictFromInput(vocabulary, freq_col_idx, regr):
     '''
         Predicts based on inputed transcript
     '''
@@ -237,5 +227,5 @@ testExamples = util.readExamples('switchboardsampleL.test')
 compareExamples = valExamples
 vocabulary, freq_col_idx, regr = learnPredictor(trainExamples, None, valExamples, None)
 allPosNegBaseline(trainExamples, valExamples)
-# realtimePredict(vocabulary, freq_col_idx, regr)
+# predictFromInput(vocabulary, freq_col_idx, regr)
 '''

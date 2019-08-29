@@ -30,8 +30,10 @@ from threading import Thread
 import subprocess
 
 from convertaudiosample import *
-from rnn import Config, RNNModel, predict_laughter
+from languagemodel import predictLaughter
+from rnn import Config, RNNModel
 from rnn_utils import *
+from util import readExamples
 
 audioFile = "laughbot_audio.wav" #"laughtrack8.wav"
 transcriptFile = "laughbot_text.txt"
@@ -160,21 +162,23 @@ if __name__ == "__main__":
 		    # main REPL loop
 			response = raw_input("Press 's' to start: ")
 			while response != 'q':
-			    print("press enter to stop recording")
-			    record_audio()
-			    print("audio recorded")
-			    transcript = get_transcript_from_file()
-			    print("transcript: ", transcript)
-			    convert_audio_sample()
+			    # print("press enter to stop recording")
+			    # record_audio()
+			    # print("audio recorded")
+			    # transcript = get_transcript_from_file()
+			    # print("transcript: ", transcript)
+			    # convert_audio_sample()
 			    
 			    test_dataset = load_dataset("laughbot_audio.test.pkl")
 			    feature_b, label_b, seqlens_b = make_batches(test_dataset, batch_size=len(test_dataset[0]))
 			    feature_b = pad_all_batches(feature_b)
 			    batch_cost, summary, acc, predicted, acoustic = model.train_on_batch(session, feature_b[0], label_b[0], seqlens_b[0], train=False)
-			    prediction = predict_laughter(acoustic)
-			    print('Prediction', prediction)
+			    text = readExamples('laughbot_text.txt')
+			    prediction = predictLaughter(text, acoustic)
 			    if prediction[0] == 1:
 			        play_laughtrack()
+			    else:
+			    	print('Not funny :(')
 			    response = raw_input("Press 'c' to continue, 'q' to quit: ")
 
 			print('Thanks for talking to me')

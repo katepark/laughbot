@@ -223,16 +223,6 @@ def train_language_model(acoustic_features, val_acoustic):
     print('TEST BASELINE')
     allPosNegBaseline(compareExamples)
 
-    # realtimePredict(vocabulary, freq_col_idx, regr)
-
-def predict_laughter(acoustic):
-    predictExamples = util.readExamples('laughbot_text.txt')
-    # place holder, call annie's acoustic extractor!
-    #sample_acoustic = np.zeros((len(predictExamples), Config.num_hidden))
-
-    prediction = predictLaughter(predictExamples, acoustic)
-    return prediction
-
 def load_and_laugh():
     return None
 

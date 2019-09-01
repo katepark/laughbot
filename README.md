@@ -31,6 +31,5 @@ Run `python laughbot_realtime.py`
 ## Imports
 * `pip install SpeechRecognition` (https://pypi.python.org/pypi/SpeechRecognition/)
 * `pip install google-api-python-client`
-* `pip install gcloud`
 * `brew install portaudio && brew link portaudio`
 * `pip install pyaudio`

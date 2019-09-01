@@ -95,6 +95,10 @@ def pad_sequences(sequences, maxlen=None, dtype=np.float32,
             raise ValueError('Padding type "%s" not understood' % padding)
     return x, lengths
 
+def pad_all_batches(batch_feature_array):
+    for batch_num in range(len(batch_feature_array)):
+        batch_feature_array[batch_num] = pad_sequences(batch_feature_array[batch_num])[0]
+    return batch_feature_array
 
 def get_tidigits_to_index_mapping():
 	return {"z": 0, "o": 10, "1": 1, "2": 2, "3": 3, "4": 4, "5": 5, "6": 6, "7": 7, "8": 8, "9": 9, "_": 11}

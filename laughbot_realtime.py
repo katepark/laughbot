@@ -139,7 +139,7 @@ def end_recording(exitKey):
 
 def play_laughtrack():
 	print "LOL!"
-	laughFiles = ["laughtrack1.wav", "laughtrack2.wav", "laughtrack3.wav", "laughtrack4.wav", "laughtrack5.wav", "laughtrack6.wav", "laughtrack7.wav"]
+	laughFiles = ["laughtracks/laughtrack{}.wav".format(i) for i in range(1, 8)]
 	rand = np.random.randint(0,len(laughFiles))
 	return_code = subprocess.call(["afplay", laughFiles[rand]])
 
@@ -165,8 +165,8 @@ if __name__ == "__main__":
 			    # print("press enter to stop recording")
 			    # record_audio()
 			    # print("audio recorded")
-			    # transcript = get_transcript_from_file()
-			    # print("transcript: ", transcript)
+			    transcript = get_transcript_from_file()
+			    print("transcript: ", transcript)
 			    # convert_audio_sample()
 			    
 			    test_dataset = load_dataset("laughbot_audio.test.pkl")

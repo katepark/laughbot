@@ -1,20 +1,3 @@
-#The Cloud Speech API v1 is officially released and is generally available from the https://speech.googleapis.com/v1/speech endpoint.
-#Should probably move the service_account_key file (CS224s-Laughbot-cdb7a14ba039.json) to local directories instead of shared for data safety and permissions reasons, after you login
-'''Run this:
-	export GOOGLE_APPLICATION_CREDENTIALS=./service_account_key.json #set environment variable to key path
-	Follow instructions for Google cloud SDK installation: https://cloud.google.com/sdk/downloads 
-	** when it asks to crease bash profile and leave blank or provide path, use the path it suggests but change .bash_profile to .profile (https://stackoverflow.com/questions/31084458/installed-google-cloud-sdk-but-cant-access-gcloud)
-
-	gcloud auth application-default login 
-	gcloud auth activate-service-account --key-file=./service_account_key.json
-	
-    pip install SpeechRecognition
-    pip install google-api-python-client
-    brew install portaudio && sudo brew link portaudio
-    pip install pyaudio
-    #https://pypi.python.org/pypi/SpeechRecognition/
-'''
-
 # Portions of this page are modifications based on work created and shared by Google and used according to terms described in the Creative Commons 3.0 Attribution License.
 
 import numpy as np
@@ -38,7 +21,8 @@ from util import readExamples
 audioFile = "laughbot_audio.wav" #"laughtrack8.wav"
 transcriptFile = "laughbot_text.txt"
 
-#http://sharewebegin.blogspot.com/2013/07/record-from-mic-python.html
+# based on code from
+# http://sharewebegin.blogspot.com/2013/07/record-from-mic-python.html
 def record_audio():
 	exitKey = []
 	Thread(target=end_recording, args=(exitKey,)).start()
@@ -82,7 +66,7 @@ def record_audio():
 	wf.close()
 
 
-def get_transcript_from_file():
+def get_transcript_from_file(credential):
 	#open file "latest_recording.wav"
 	# use the audio file as the audio source
 	r = sr.Recognizer()
@@ -90,10 +74,9 @@ def get_transcript_from_file():
 	    audio = r.record(source)  # read the entire audio file
 
 	# recognize speech using Google Cloud Speech
-	#GOOGLE_CLOUD_SPEECH_CREDENTIALS = #If default credentials not working from the environment variable, insert credentials here and add to r.recognize_google_cloud call
 	try:
-		# line = r.recognize_google_cloud(audio)
-		line = r.recognize_sphinx(audio) # workaround w/ sphinx for now
+		line = r.recognize_google_cloud(audio, credentials_json = credential)
+		# line = r.recognize_sphinx(audio) # workaround w/ sphinx for now
 		line = line.replace("hahaha", "[Laughter]")
 		line = line.replace("Ha-Ha", "[Laughter]")
 
@@ -148,6 +131,10 @@ if __name__ == "__main__":
 	print("Hi! I'm Laughbot! Talk to me and press the Enter key when you want me to decide whether you're funny.")
 	print("--------------------------------------------------------------------------")
 
+	# set up google cloud credential
+	with open ('./service_account_key.json', 'r') as f:
+		credential = f.read()
+
 	with tf.Graph().as_default():
 		model = RNNModel()
 		init = tf.global_variables_initializer()
@@ -165,7 +152,7 @@ if __name__ == "__main__":
 			    # print("press enter to stop recording")
 			    # record_audio()
 			    # print("audio recorded")
-			    transcript = get_transcript_from_file()
+			    transcript = get_transcript_from_file(credential)
 			    print("transcript: ", transcript)
 			    # convert_audio_sample()
 			    

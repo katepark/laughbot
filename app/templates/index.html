@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1">
+
+  <title>Laughbot</title>
+
+  <!-- bootstrap -->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+
+  <!-- Google fonts -->
+  <link href='http://fonts.googleapis.com/css?family=Roboto:400,300' rel='stylesheet' type='text/css'>
+
+  <link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='style.css') }}"/>
+
+</head>
+
+<body>
+
+<div class="main-container">
+<header>
+  <h1>Hi! I'm Laughbot.</h1>
+  <button id="recordButton" type="button" class="btn btn-success btn-lg">Record</button>
+  <button id="stopButton" type="button" class="btn btn-danger btn-lg">Stop</button>
+</header>
+
+<div style="text-align:center">
+  <h1 id="prediction"></h1>
+</div>
+
+<footer>
+<button id="exitButton" type="button" class="btn btn-danger btn-md">Exit</button>
+</footer>
+</div>
+
+<!-- javascript -->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
+<script>
+$(document).ready(function() {
+  $("#recordButton").click(function() {
+    $.getJSON('/record',
+      function(data) {
+    });
+  });  
+  $("#stopButton").click(function() {
+    $.getJSON('/predict',
+      function(json) {
+        var prediction = json.funny ? 'LOL!' : 'Not funny :-(';
+        $('#prediction').html(prediction);
+    });
+  });
+  $("#exitButton").click(function() {
+    $.getJSON('/exit',
+      function(data) {
+    });
+  });  
+});
+</script>
+</body>
+
+</html>

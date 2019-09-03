@@ -28,7 +28,7 @@ def fitModel(examples, acoustic=None, vocab=None, frequent_ngram_col_idx=None):
         # UNCOMMENT TO ADD NGRAM FEATURES
         analyze = vectorizer.build_analyzer()
         fullfeature = X.toarray()
-        print 'VOCAB SHAPE', len(fullfeature), len(fullfeature[0])
+        # print 'VOCAB SHAPE', len(fullfeature), len(fullfeature[0])
 
         # The most time expensive part (pruning so only frequent ngrams used)
         if not frequent_ngram_col_idx:
@@ -38,10 +38,10 @@ def fitModel(examples, acoustic=None, vocab=None, frequent_ngram_col_idx=None):
 
         # Add features from grammatical context in transcript
         fullfeature = contextualFeatures(examples, fullfeature)
-        print 'CONTEXTUAL SHAPE', len(fullfeature), len(fullfeature[0])
+        # print 'CONTEXTUAL SHAPE', len(fullfeature), len(fullfeature[0])
 
         fullfeature = acousticFeatures(fullfeature, acoustic)
-        print 'FINAL SHAPE', len(fullfeature), len(fullfeature[0])
+        # print 'FINAL SHAPE', len(fullfeature), len(fullfeature[0])
 
         # return vectorizer
         return fullfeature, vectorizer.vocabulary_, frequent_ngram_col_idx

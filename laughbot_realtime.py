@@ -1,5 +1,4 @@
 # Portions of this page are modifications based on work created and shared by Google and used according to terms described in the Creative Commons 3.0 Attribution License.
-from app import app
 import numpy as np
 import os
 # uncomment this line to suppress Tensorflow warnings

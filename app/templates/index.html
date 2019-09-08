@@ -23,15 +23,19 @@
 <div class="main-container">
 <header>
   <h1>Hi! I'm Laughbot.</h1>
-  <button id="recordButton" type="button" class="btn btn-success btn-lg">Start Recording</button>
+  <p>Click "Start Recording" to talk to me. Once you click "Stop Recording", I'll run what you said through my models and tell you if you're funny or not.</p>
 </header>
 
+<div>
+  <button id="recordButton" type="button" class="btn btn-success btn-lg">Start Recording</button>
+</div>
+
 <div style="text-align:center">
-  <h1 id="prediction"></h1>
+  <h2 id="prediction"></h2>
 </div>
 
 <footer>
-<button id="exitButton" type="button" class="btn btn-danger btn-md">Exit</button>
+<button id="exitButton" type="button" class="btn btn-danger btn-md">Exit and Close TF Session</button>
 </footer>
 </div>
 

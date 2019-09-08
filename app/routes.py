@@ -83,6 +83,8 @@ def record():
     print("Recording")
     global p
     global stream
+    global frames
+    frames = []
     p = pyaudio.PyAudio()
 
     stream = p.open(format=FORMAT,
@@ -117,12 +119,12 @@ def predict():
 	print("Running language model")
 	text = get_transcript_from_file(credential)
 	example = [(text, 0)]
-	print(example)
+	print(text)
 	prediction = predictLaughter(example, acoustic)
 
 	if prediction[0] == 1:
 		play_laughtrack()
-	sess.close()
+
  	return {"funny": prediction[0]}
 
 @app.route('/exit')

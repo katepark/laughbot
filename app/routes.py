@@ -122,6 +122,7 @@ def predict():
 
 	if prediction[0] == 1:
 		play_laughtrack()
+	sess.close()
  	return {"funny": prediction[0]}
 
 @app.route('/exit')

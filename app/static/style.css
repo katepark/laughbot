@@ -4,7 +4,6 @@ body {
   font-family: 'Roboto', sans-serif;
   font-weight: 300;
   font-size: 16px;
-  padding-top: 70px;
 }
 
 .main-container {
@@ -16,8 +15,6 @@ body {
 }
 
 header {
-  margin-top: 20px;
-  margin-bottom: 20px;
   text-align: center;
 }
 

@@ -30,13 +30,10 @@
   <button id="recordButton" type="button" class="btn btn-success btn-lg">Start Recording</button>
 </div>
 
-<div style="text-align:center">
-  <h2 id="prediction"></h2>
+<div id="convo" style="text-align:center">
+  <p id="text">You said:</p>
+  <h2 id="prediction">Laughbot says:</h2>
 </div>
-
-<footer>
-<button id="exitButton" type="button" class="btn btn-danger btn-md">Exit and Close TF Session</button>
-</footer>
 </div>
 
 <!-- javascript -->
@@ -57,17 +54,13 @@ $(document).ready(function() {
       $('#recordButton').html("Start Recording");
       $.getJSON('/predict',
       function(data) {
-        var prediction = data.funny ? 'LOL!' : 'Not funny :-(';
-        $('#prediction').html(prediction);
+        var prediction = (data.funny === 1) ? 'LOL!' : 'Not funny :-(';
+        $('#text').html("You said: " + data.text);
+        $('#prediction').html("Laughbot says: " + prediction);
       });
     }
     recording = !recording;
-  });
-  $("#exitButton").click(function() {
-    $.getJSON('/exit',
-      function(data) {
-    });
-  });  
+  }); 
 });
 </script>
 </body>

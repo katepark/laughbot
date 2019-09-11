@@ -22,13 +22,6 @@ header {
   margin-bottom: 48px;
 }
 
-footer {
-  margin-top: 300px;
-  bottom: 0;
-  height: 100px;
-  width: 100%;
-}
-
 p {
   margin: 0 auto;
   max-width: 550px;
@@ -45,7 +38,11 @@ h2 {
   font-weight: 300;
   text-align: center;
   color: royalblue;
-  margin-top: 80px;
+  margin-top: 20px;
+}
+
+#convo {
+  margin-top: 40px;
 }
 
 .btn-lg {

@@ -4,7 +4,9 @@ body {
   font-family: 'Roboto', sans-serif;
   font-weight: 300;
   font-size: 16px;
-  padding-top: 70px;
+  background-color: #fff5bf;
+  text-align: center;
+  padding: 0px 40px;
 }
 
 .main-container {
@@ -12,58 +14,46 @@ body {
  overflow: hidden;
  display: block;
  position: relative;
- padding-bottom: 100px; /* height of your footer */
 }
 
 header {
-  margin-top: 20px;
-  margin-bottom: 20px;
   text-align: center;
+  margin-top: 100px;
+  margin-bottom: 48px;
 }
 
-footer {
-  bottom: 0;
-  height: 100px;
-  width: 100%;
-  text-align: center;
-  position: absolute;
+p {
+  margin: 0 auto;
+  max-width: 550px;
 }
 
 h1 {
-  font-size: 30px;
-  font-weight: 300;
-  text-align: center;
+  color: royalblue;
+  font-size: 50px;
+  font-weight: 400;
 }
 
 h2 {
-  font-size: 25px;
-  /* font-weight: 300; */
-  font-weight: bold;
-  color: #8c1515;
+  font-size: 50px;
+  font-weight: 300;
+  text-align: center;
+  color: royalblue;
+  margin-top: 20px;
 }
 
-h3 {
-  font-size: 20px;
-  font-weight: bold;
+#convo {
+  margin-top: 40px;
 }
 
-.lhead {
-  font-weight: normal;
-  margin-top: 5px;
+.btn-lg {
+  padding: 24px 40px;
+  font-size: 24px;
 }
 
-.litem {
-  margin-top: 5px;
+.btn-success, .btn-success:hover, .btn-success:focus, .btn-success:active, .btn-success.active, .open>.dropdown-toggle.btn-success {
+  background-color: cornflowerblue;
+  border-color: cornflowerblue;
 }
-
-.sec {
-  margin-bottom: 10px;
-  padding-top: 10px;
-  padding-bottom: 10px;
-}
-
-.bold { font-weight: bold; }
-.red { color: #FF0000; }
 
 /* Handle formatting on mobile */
 /*@media (max-width: 767px) {

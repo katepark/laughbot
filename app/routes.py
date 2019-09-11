@@ -3,12 +3,16 @@ from app import app
 import os, sys
 import numpy as np
 import tensorflow as tf
+# ignore warnings
+tf.logging.set_verbosity(tf.logging.ERROR)
 import speech_recognition as sr
 import pyaudio
 import wave
 import threading
 from threading import Thread
 import subprocess
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.linear_model import LogisticRegression
 
 # add parent directory to filepath for imports
 sys.path.insert(1, os.path.join(sys.path[0], '..'))
@@ -17,7 +21,7 @@ from rnn import RNNModel
 from rnn_utils import *
 from util import readExamples
 from convertaudiosample import *
-from languagemodel import predictLaughter
+from languagemodel import fitModel
 
 # audio params
 CHUNK = 1024
@@ -30,6 +34,9 @@ p = None
 stream = None
 audioFile = "laughbot_audio.wav"
 audioFileProcessed = "laughbot_audio.test.pkl"
+savedlogmodelfile = 'logistic_model.sav'
+savedvocabularyfile = 'vocabulary.sav'
+savedfreqcolidxfile = 'freqcolidx.sav'
 
 def callback(in_data, frame_count, time_info, status):
 	frames.append(in_data)
@@ -54,6 +61,10 @@ def get_transcript_from_file(credential):
 
 	return ""
 
+def predictLaughter(example, acoustic):
+	X, _, _ = fitModel(example, acoustic, vocab=vocab, frequent_ngram_col_idx=freq_col_idx)
+	return regr.predict(X)
+
 def play_laughtrack():
 	laughFiles = ["laughtracks/laughtrack{}.wav".format(i) for i in range(1, 8)]
 	rand = np.random.randint(0,len(laughFiles))
@@ -64,14 +75,14 @@ with open ('service_account_key.json', 'r') as f:
 	credential = f.read()
 
 # initialize model
-model = RNNModel()
-init = tf.global_variables_initializer()
-
-sess = tf.Session()
-sess.run(init)
-# Load pretrained model
-new_saver = tf.train.import_meta_graph('saved_models/model.meta', clear_devices=True)
-new_saver.restore(sess, 'saved_models/model')
+print("Setting up")
+graph = tf.Graph()
+with graph.as_default():
+	model = RNNModel()
+	init = tf.global_variables_initializer()
+vocab = pickle.load(open(savedvocabularyfile, 'rb'))
+freq_col_idx = pickle.load(open(savedfreqcolidxfile, 'rb'))
+regr = pickle.load(open(savedlogmodelfile, 'rb'))
 
 @app.route('/')
 @app.route('/index')
@@ -83,6 +94,8 @@ def record():
     print("Recording")
     global p
     global stream
+    global frames
+    frames = []
     p = pyaudio.PyAudio()
 
     stream = p.open(format=FORMAT,
@@ -108,27 +121,27 @@ def predict():
 	wf.writeframes(b''.join(frames))
 	wf.close()
 
-	print("Running audio model")
+	print("Processing audio")
 	convert_audio_sample()
 	test_dataset = load_dataset(audioFileProcessed)
 	feature_b, label_b, seqlens_b = make_batches(test_dataset, batch_size=len(test_dataset[0]))
 	feature_b = pad_all_batches(feature_b)
-	batch_cost, summary, acc, predicted, acoustic = model.train_on_batch(sess, feature_b[0], label_b[0], seqlens_b[0], train=False)
-	print("Running language model")
-	text = get_transcript_from_file(credential)
-	example = [(text, 0)]
-	print(example)
-	prediction = predictLaughter(example, acoustic)
+	with tf.Session(graph=graph) as session:
+		session.run(init)
+		# Load pretrained model
+		new_saver = tf.train.import_meta_graph('saved_models/model.meta', clear_devices=True)
+		new_saver.restore(session, 'saved_models/model')
+		batch_cost, summary, acc, predicted, acoustic = model.train_on_batch(session, feature_b[0], label_b[0], seqlens_b[0], train=False)
+		print("Running language model")
+		text = get_transcript_from_file(credential)
+		print "transcript:", text
+		example = [(text, 0)]
+		prediction = predictLaughter(example, acoustic)[0]
+		print "prediction:", prediction
+		if prediction == 1:
+			play_laughtrack()
 
-	if prediction[0] == 1:
-		play_laughtrack()
- 	return {"funny": prediction[0]}
-
-@app.route('/exit')
-def exit():
-	print("ending")
-	sess.close()
-	return ""
+ 		return {"funny": prediction, "text": text}
 
 if __name__ == "__main__":
     app.run(debug=False, port=5000)

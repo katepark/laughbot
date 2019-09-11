@@ -1,4 +1,5 @@
 # Portions of this page are modifications based on work created and shared by Google and used according to terms described in the Creative Commons 3.0 Attribution License.
+from app import app
 import numpy as np
 import os
 # uncomment this line to suppress Tensorflow warnings
@@ -148,12 +149,12 @@ if __name__ == "__main__":
 		    # main REPL loop
 			response = raw_input("Press 's' to start: ")
 			while response != 'q':
-			    # print("press enter to stop recording")
-			    # record_audio()
-			    # print("audio recorded")
+			    print("press enter to stop recording")
+			    record_audio()
+			    print("audio recorded")
 			    transcript = get_transcript_from_file(credential)
 			    print("transcript: ", transcript)
-			    # convert_audio_sample()
+			    convert_audio_sample()
 			    
 			    test_dataset = load_dataset("laughbot_audio.test.pkl")
 			    feature_b, label_b, seqlens_b = make_batches(test_dataset, batch_size=len(test_dataset[0]))

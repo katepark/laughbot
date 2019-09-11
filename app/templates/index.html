@@ -23,17 +23,17 @@
 <div class="main-container">
 <header>
   <h1>Hi! I'm Laughbot.</h1>
-  <button id="recordButton" type="button" class="btn btn-success btn-lg">Record</button>
-  <button id="stopButton" type="button" class="btn btn-danger btn-lg">Stop</button>
+  <p>Click "Start Recording" to talk to me. Once you click "Stop Recording", I'll run what you said through my models and tell you if you're funny or not.</p>
 </header>
 
-<div style="text-align:center">
-  <h1 id="prediction"></h1>
+<div>
+  <button id="recordButton" type="button" class="btn btn-success btn-lg">Start Recording</button>
 </div>
 
-<footer>
-<button id="exitButton" type="button" class="btn btn-danger btn-md">Exit</button>
-</footer>
+<div id="convo" style="text-align:center">
+  <p id="text">You said:</p>
+  <h2 id="prediction">Laughbot says:</h2>
+</div>
 </div>
 
 <!-- javascript -->
@@ -41,23 +41,26 @@
 <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
 <script>
 $(document).ready(function() {
+  var recording = true;
   $("#recordButton").click(function() {
-    $.getJSON('/record',
+    if (recording) {
+      $('#recordButton').removeClass('btn btn-success btn-lg').addClass('btn btn-danger btn-lg');
+      $('#recordButton').html("Stop Recording");
+      $.getJSON('/record',
+        function(data) {
+      });
+    } else {
+      $('#recordButton').removeClass('btn btn-danger btn-lg').addClass('btn btn-success btn-lg');
+      $('#recordButton').html("Start Recording");
+      $.getJSON('/predict',
       function(data) {
-    });
-  });  
-  $("#stopButton").click(function() {
-    $.getJSON('/predict',
-      function(json) {
-        var prediction = json.funny ? 'LOL!' : 'Not funny :-(';
-        $('#prediction').html(prediction);
-    });
-  });
-  $("#exitButton").click(function() {
-    $.getJSON('/exit',
-      function(data) {
-    });
-  });  
+        var prediction = (data.funny === 1) ? 'LOL!' : 'Not funny :-(';
+        $('#text').html("You said: " + data.text);
+        $('#prediction').html("Laughbot says: " + prediction);
+      });
+    }
+    recording = !recording;
+  }); 
 });
 </script>
 </body>
